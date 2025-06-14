@@ -2,7 +2,7 @@ function App() {
   return (
     <div>
       <header style={styles.header}>
-        <h1 style={styles.title}>💛NinaYT ☀️</h1>
+        <h1 style={styles.title}>NinaYT ☀️</h1>
         <p style={styles.tagline}>☀️Custom NYT💛</p>
       </header>
 
