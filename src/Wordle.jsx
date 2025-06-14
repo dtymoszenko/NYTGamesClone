@@ -108,18 +108,34 @@ export default function Wordle() {
     return () => window.removeEventListener("keydown", handleKeyDown);
   }, [board, currentRow, currentCol]);
 
+  // --- Virtual keyboard layout (QWERTY style) ---
+  const keyboardRows = [
+    ["Q", "W", "E", "R", "T", "Y", "U", "I", "O", "P"],
+    ["A", "S", "D", "F", "G", "H", "J", "K", "L"],
+    ["Enter", "Z", "X", "C", "V", "B", "N", "M", "Backspace"],
+  ];
+
+  // --- Handles virtual key presses by simulating real keydown events ---
+  function handleVirtualKey(key) {
+    const event = new KeyboardEvent("keydown", {
+      key,
+      bubbles: true,
+    });
+    window.dispatchEvent(event);
+  }
+
   return (
-    <div className="flex flex-col items-center gap-2 mt-10">
+    <div className="flex flex-col items-center gap-6 mt-10">
       {board.map((row, rowIndex) => (
         <div key={rowIndex} className="flex gap-2">
           {row.map((letter, colIndex) => {
             const status = statuses[rowIndex][colIndex];
 
-            //NINAYT colors yellow=correct, blue=wrong place
+            // NINAYT colors yellow=correct, blue=wrong place
             let bg = "bg-white";
-            if (status === "green") bg = "bg-yellow-400 text-white";      // correct spot => Nina's yellow
+            if (status === "green") bg = "bg-yellow-400 text-white";      // correct spot => yellow
             else if (status === "yellow") bg = "bg-blue-200 text-black";  // letter present elsewhere => light blue
-            else if (status === "gray") bg = "bg-gray-300 text-white";    // not in word
+            else if (status === "gray") bg = "bg-gray-300 text-white";    // not in word, gray
 
             return (
               <div
@@ -132,6 +148,25 @@ export default function Wordle() {
           })}
         </div>
       ))}
+
+      {/* Tailwind keyboard */}
+      <div className="flex flex-col gap-2 mt-6 w-full max-w-md">
+        {keyboardRows.map((row, rowIdx) => (
+          <div key={rowIdx} className="flex justify-center gap-1">
+            {row.map((key) => (
+              <button
+                key={key}
+                onClick={() => handleVirtualKey(key)}
+                className={`flex-1 sm:flex-none sm:w-10 md:w-12 lg:w-14 h-12 rounded-lg shadow text-sm font-medium bg-white border border-gray-300 hover:bg-gray-100 transition ${
+                  key === "Enter" || key === "Backspace" ? "sm:w-20 md:w-24" : ""
+                }`}
+              >
+                {key === "Backspace" ? "⌫" : key}
+              </button>
+            ))}
+          </div>
+        ))}
+      </div>
     </div>
   );
 }
