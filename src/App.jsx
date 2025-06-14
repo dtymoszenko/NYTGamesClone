@@ -80,8 +80,8 @@ function GameCard({ title, description, color, to, icon }) {
   );
 }
 
-/* ---------- Placeholder games ---------- */
-function Wordle()   { return <p className="text-center mt-20 text-xl">🟩 Wordle game will go here!</p>; }
+/* ---------- Links to Games ---------- */
+import Wordle from "./Wordle.jsx";
 function Strands()  { return <p className="text-center mt-20 text-xl">🔷 Strands game will go here!</p>; }
 function Crossword(){ return <p className="text-center mt-20 text-xl">✏️ Crossword game will go here!</p>; }
 
