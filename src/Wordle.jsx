@@ -4,17 +4,20 @@ export default function Wordle() {
   const numRows = 6;   // Players get 6 guesses
   const numCols = 5;   // Each guess is a 5-letter word
 
-  const targetWord = "PLANT"; // This is the correct word (will be checked in Step 2)
+  const targetWord = "PLANT"; // This is the word user is guessing, currently HARDCODED obviously
 
   // Board is a 2D array: 6 rows of 5 blank tiles
   const [board, setBoard] = useState(
     Array.from({ length: numRows }, () => Array(numCols).fill(""))
   );
 
-  // Track tile statuses (green/yellow/gray – we'll map colors later)
+  // Track tile statuses
   const [statuses, setStatuses] = useState(
     Array.from({ length: numRows }, () => Array(numCols).fill(""))
   );
+
+  // Tracking each letter’s best status for keyboard coloring
+  const [keyStatuses, setKeyStatuses] = useState({});
 
   // Tracks the current row and letter column being typed
   const [currentRow, setCurrentRow] = useState(0);
@@ -52,22 +55,22 @@ export default function Wordle() {
             letterCount[char] = (letterCount[char] || 0) + 1;
           }
 
-          // First pass: correct positions (green)
+          // First pass: correct positions  → mark status "yellow"
           for (let i = 0; i < numCols; i++) {
             if (guess[i] === targetWord[i]) {
-              newStatuses[i] = "green";
+              newStatuses[i] = "yellow";
               letterCount[guess[i]]--;
             }
           }
 
-          // Second pass: wrong position but correct letter (yellow)
+          // Second pass: wrong spot but correct letter → mark status "blue"
           for (let i = 0; i < numCols; i++) {
             if (
-              newStatuses[i] !== "green" &&
+              newStatuses[i] !== "yellow" &&
               targetWord.includes(guess[i]) &&
               letterCount[guess[i]] > 0
             ) {
-              newStatuses[i] = "yellow";
+              newStatuses[i] = "blue";
               letterCount[guess[i]]--;
             }
           }
@@ -77,6 +80,25 @@ export default function Wordle() {
             const copy = [...prev];
             copy[currentRow] = newStatuses;
             return copy;
+          });
+
+          // NEW: update keyboard key colors (yellow>blue>gray priority)
+          setKeyStatuses((prev) => {
+            const updated = { ...prev };
+            for (let i = 0; i < numCols; i++) {
+              const letter = guess[i];
+              const tileStatus = newStatuses[i];
+
+              const currentStatus = updated[letter];
+              if (
+                tileStatus === "yellow" ||
+                (tileStatus === "blue" && currentStatus !== "yellow") ||
+                (tileStatus === "gray" && !currentStatus)
+              ) {
+                updated[letter] = tileStatus;
+              }
+            }
+            return updated;
           });
 
           // Check win condition
@@ -126,16 +148,17 @@ export default function Wordle() {
 
   return (
     <div className="flex flex-col items-center gap-6 mt-10">
+      {/* ---------- WORDLE BOARD ---------- */}
       {board.map((row, rowIndex) => (
         <div key={rowIndex} className="flex gap-2">
           {row.map((letter, colIndex) => {
             const status = statuses[rowIndex][colIndex];
 
-            // NINAYT colors yellow=correct, blue=wrong place
+            // NINAYT colors: yellow = correct spot, blue = wrong spot, gray = not present
             let bg = "bg-white";
-            if (status === "green") bg = "bg-yellow-400 text-white";      // correct spot => yellow
-            else if (status === "yellow") bg = "bg-blue-200 text-black";  // letter present elsewhere => light blue
-            else if (status === "gray") bg = "bg-gray-300 text-white";    // not in word, gray
+            if (status === "yellow") bg = "bg-yellow-400 text-white";
+            else if (status === "blue") bg = "bg-blue-200  text-black";
+            else if (status === "gray") bg = "bg-gray-300  text-white";
 
             return (
               <div
@@ -149,21 +172,30 @@ export default function Wordle() {
         </div>
       ))}
 
-      {/* Tailwind keyboard */}
+      {/* ---------- TAILWIND KEYBOARD ---------- */}
       <div className="flex flex-col gap-2 mt-6 w-full max-w-md">
         {keyboardRows.map((row, rowIdx) => (
           <div key={rowIdx} className="flex justify-center gap-1">
-            {row.map((key) => (
-              <button
-                key={key}
-                onClick={() => handleVirtualKey(key)}
-                className={`flex-1 sm:flex-none sm:w-10 md:w-12 lg:w-14 h-12 rounded-lg shadow text-sm font-medium bg-white border border-gray-300 hover:bg-gray-100 transition ${
-                  key === "Enter" || key === "Backspace" ? "sm:w-20 md:w-24" : ""
-                }`}
-              >
-                {key === "Backspace" ? "⌫" : key}
-              </button>
-            ))}
+            {row.map((key) => {
+              const status = keyStatuses[key];
+              // Map key status to background color
+              let keyColor = "bg-white text-black";
+              if (status === "yellow") keyColor = "bg-yellow-400 text-white";
+              else if (status === "blue")  keyColor = "bg-blue-200  text-black";
+              else if (status === "gray")  keyColor = "bg-gray-400  text-white";
+
+              return (
+                <button
+                  key={key}
+                  onClick={() => handleVirtualKey(key)}
+                  className={`flex-1 sm:flex-none sm:w-10 md:w-12 lg:w-14 h-12 rounded-lg shadow text-sm font-medium border border-gray-300 hover:brightness-105 transition ${keyColor} ${
+                    key === "Enter" || key === "Backspace" ? "sm:w-20 md:w-24" : ""
+                  }`}
+                >
+                  {key === "Backspace" ? "⌫" : key}
+                </button>
+              );
+            })}
           </div>
         ))}
       </div>
