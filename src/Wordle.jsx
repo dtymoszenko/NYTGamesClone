@@ -1,6 +1,5 @@
 import { useEffect, useState } from "react";
 
-
 export default function Wordle() {
   const numRows = 6;   // Players get 6 guesses
   const numCols = 5;   // Each guess is a 5-letter word
@@ -36,6 +35,25 @@ export default function Wordle() {
   const [pops, setPops] = useState(
     Array.from({ length: numRows }, () => Array(numCols).fill(false))
   );
+
+  // victory-modal on/off
+  const [showModal, setShowModal] = useState(false);
+
+  // text that will be copied to clipboard
+  const [shareText, setShareText] = useState("");
+
+  // build the grid string
+  function buildShareString() {
+    let grid = "";
+    for (let r = 0; r <= currentRow; r++) {
+      for (let c = 0; c < numCols; c++) {
+        const st = statuses[r][c];
+        grid += st === "yellow" ? "🟨" : st === "blue" ? "🟦" : "⬛";
+      }
+      if (r !== currentRow) grid += "\n";
+    }
+    return `NinaYT Wordle ${currentRow + 1}/${numRows}\n${grid}`;
+  }
 
   // Keyboard input logic
   useEffect(() => {
@@ -124,7 +142,21 @@ export default function Wordle() {
               if (i === numCols - 1) {
                 setTimeout(() => {
                   if (guess === targetWord) {
-                    alert("🎉 You guessed it!");
+                    // Build share string, open modal, copy to clipboard
+                    const share = buildShareString();
+                    setShareText(share);
+                    setShowModal(true);
+                    try {
+                      navigator.clipboard.writeText(share);
+                    } catch (_) {}
+                    // fire confetti 🎊
+                    import("canvas-confetti").then(({ default: confetti }) =>
+                      confetti({
+                        spread: 90,
+                        particleCount: 120,
+                        origin: { y: 0.8 },
+                      })
+                    );
                     setIsGameOver(true);
                     return;
                   }
@@ -172,7 +204,7 @@ export default function Wordle() {
     // Attach keyboard listener
     window.addEventListener("keydown", handleKeyDown);
     return () => window.removeEventListener("keydown", handleKeyDown);
-  }, [board, currentRow, currentCol, isGameOver]);
+  }, [board, currentRow, currentCol, isGameOver, statuses]);  // added statuses so buildShareString is up-to-date
 
   // --- Virtual keyboard layout (QWERTY style) ---
   const keyboardRows = [
@@ -249,6 +281,32 @@ export default function Wordle() {
           })}
         </div>
       ))}
+
+      {/* ---------- VICTORY MODAL ---------- */}
+      {showModal && (
+        <div className="fixed inset-0 z-50 grid place-items-center bg-black/60">
+          <div className="bg-white rounded-xl p-6 w-80 text-center space-y-4">
+            <h2 className="text-2xl font-bold">🎉 You guessed it!</h2>
+
+            {/* share grid */}
+            <pre className="font-mono whitespace-pre leading-5">{shareText}</pre>
+
+            <button
+              onClick={() => navigator.clipboard.writeText(shareText)}
+              className="w-full bg-yellow-400 text-white py-2 rounded-lg shadow hover:brightness-105"
+            >
+              Copy to clipboard
+            </button>
+
+            <button
+              onClick={() => setShowModal(false)}
+              className="text-sm text-gray-500 hover:underline"
+            >
+              Close
+            </button>
+          </div>
+        </div>
+      )}
 
       {/* ---------- TAILWIND KEYBOARD ---------- */}
       <div className="flex flex-col gap-2 mt-6 w-full max-w-md">
