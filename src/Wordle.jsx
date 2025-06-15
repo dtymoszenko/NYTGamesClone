@@ -208,7 +208,7 @@ export default function Wordle() {
                       status === "yellow"
                         ? "bg-yellow-400 text-white border-yellow-400"
                         : status === "blue"
-                        ? "bg-blue-300 text-black border-blue-300"
+                        ? "bg-blue-300 text-white border-blue-300"
                         : status === "gray"
                         ? "bg-gray-600 text-white border-gray-600"
                         : "bg-transparent text-black border-gray-400"
