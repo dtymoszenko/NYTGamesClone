@@ -24,7 +24,12 @@ export default function Wordle() {
   const [currentCol, setCurrentCol] = useState(0);
 
   //Check if game is over, Lock input from keyboard/typing when set to true
-  const [isGameOver, setIsGameOver] = useState(false); 
+  const [isGameOver, setIsGameOver] = useState(false);
+
+  //Track which tiles are currently flipping
+  const [flipping, setFlipping] = useState(
+    Array.from({ length: numRows }, () => Array(numCols).fill(false))
+  );
 
   // Keyboard input logic
   useEffect(() => {
@@ -50,9 +55,8 @@ export default function Wordle() {
           const guess = board[currentRow].join("");
           console.log("Player guessed:", guess);
 
-          // -------- Generate tile feedback --------
           const newStatuses = Array(numCols).fill("gray");
-          const letterCount = {}; // Track how many times each letter appears in targetWord
+          const letterCount = {};
 
           // Count letters in targetWord
           for (let char of targetWord) {
@@ -79,46 +83,56 @@ export default function Wordle() {
             }
           }
 
-          // Update statuses for this row
-          setStatuses((prev) => {
-            const copy = [...prev];
-            copy[currentRow] = newStatuses;
-            return copy;
-          });
+          // Animate tiles one by one with delays
+          for (let i = 0; i < numCols; i++) {
+            setTimeout(() => {
+              setFlipping((prev) => {
+                const copy = [...prev];
+                copy[currentRow][i] = true;
+                return copy;
+              });
 
-          // NEW: update keyboard key colors (yellow>blue>gray priority)
-          setKeyStatuses((prev) => {
-            const updated = { ...prev };
-            for (let i = 0; i < numCols; i++) {
-              const letter = guess[i];
-              const tileStatus = newStatuses[i];
+              setStatuses((prev) => {
+                const copy = [...prev];
+                copy[currentRow][i] = newStatuses[i];
+                return copy;
+              });
 
-              const currentStatus = updated[letter];
-              if (
-                tileStatus === "yellow" ||
-                (tileStatus === "blue" && currentStatus !== "yellow") ||
-                (tileStatus === "gray" && !currentStatus)
-              ) {
-                updated[letter] = tileStatus;
+              setKeyStatuses((prev) => {
+                const updated = { ...prev };
+                const letter = guess[i];
+                const tileStatus = newStatuses[i];
+                const currentStatus = updated[letter];
+
+                if (
+                  tileStatus === "yellow" ||
+                  (tileStatus === "blue" && currentStatus !== "yellow") ||
+                  (tileStatus === "gray" && !currentStatus)
+                ) {
+                  updated[letter] = tileStatus;
+                }
+                return updated;
+              });
+
+              // If last tile flip, check for game over condition
+              if (i === numCols - 1) {
+                setTimeout(() => {
+                  if (guess === targetWord) {
+                    alert("🎉 You guessed it!");
+                    setIsGameOver(true);
+                    return;
+                  }
+                  if (currentRow + 1 === numRows) {
+                    alert(`The word was ${targetWord}. Better luck next time!`);
+                    setIsGameOver(true);
+                    return;
+                  }
+                  setCurrentRow(currentRow + 1);
+                  setCurrentCol(0);
+                }, 500);
               }
-            }
-            return updated;
-          });
-
-          // Check win condition or out-of-rows
-          if (guess === targetWord) {
-            alert("🎉 You guessed it!");
-            setIsGameOver(true);       // lock game
-            return;
+            }, i * 300);
           }
-          if (currentRow + 1 === numRows) {
-            alert(`The word was ${targetWord}. Better luck next time!`);
-            setIsGameOver(true);       // lock game
-            return;
-          }
-
-          setCurrentRow(currentRow + 1);
-          setCurrentCol(0);
         }
       } else if (/^[a-zA-Z]$/.test(key)) {
         // If a valid letter key is pressed
@@ -162,23 +176,51 @@ export default function Wordle() {
         <div key={rowIndex} className="flex gap-1 justify-center">
           {row.map((letter, colIndex) => {
             const status = statuses[rowIndex][colIndex];
-
-            // NINAYT colors: yellow = correct spot, blue = wrong spot, gray = not present
-            let tileClass =
-              status === "yellow"
-                ? "bg-yellow-400 text-white border-yellow-400"
-                : status === "blue"
-                ? "bg-blue-300 text-black border-blue-300"
-                : status === "gray"
-                ? "bg-gray-600 text-white border-gray-600"
-                : "bg-transparent text-black border-gray-400";
+            const isFlipping = flipping[rowIndex]?.[colIndex];
 
             return (
               <div
                 key={colIndex}
-                className={`w-14 h-14 border-2 ${tileClass} uppercase flex items-center justify-center text-2xl font-bold transition-colors duration-300`}
+                className="w-14 h-14 relative"
+                style={{ perspective: "800px" }}
               >
-                {letter}
+                <div
+                  className="absolute inset-0 border-2 uppercase text-2xl font-bold flex items-center justify-center transition-transform duration-500"
+                  style={{
+                    transform: isFlipping ? "rotateX(180deg)" : "rotateX(0deg)",
+                    transformStyle: "preserve-3d",
+                  }}
+                >
+                  {/* Used Stack Overflow to keep letter visible and upright when flipping rest of tile */}
+                  {/* Front side (pre-flip) - Used Stack Overflow to keep letter present when flipping */}
+                  <div
+                    className="absolute inset-0 flex items-center justify-center text-black border-gray-400 bg-white"
+                    style={{
+                      backfaceVisibility: "hidden",
+                    }}
+                  >
+                    {letter}
+                  </div>
+
+                  {/* Back side (post-flip) */}
+                  <div
+                    className={`absolute inset-0 flex items-center justify-center text-2xl font-bold ${
+                      status === "yellow"
+                        ? "bg-yellow-400 text-white border-yellow-400"
+                        : status === "blue"
+                        ? "bg-blue-300 text-black border-blue-300"
+                        : status === "gray"
+                        ? "bg-gray-600 text-white border-gray-600"
+                        : "bg-transparent text-black border-gray-400"
+                    }`}
+                    style={{
+                      transform: "rotateX(180deg)",
+                      backfaceVisibility: "hidden",
+                    }}
+                  >
+                    {letter}
+                  </div>
+                </div>
               </div>
             );
           })}
