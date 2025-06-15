@@ -125,8 +125,6 @@ export default function Wordle() {
 
     // Attach keyboard listener
     window.addEventListener("keydown", handleKeyDown);
-
-    // Clean up listener when component unmounts
     return () => window.removeEventListener("keydown", handleKeyDown);
   }, [board, currentRow, currentCol]);
 
@@ -147,23 +145,27 @@ export default function Wordle() {
   }
 
   return (
-    <div className="flex flex-col items-center gap-6 mt-10">
+    <div className="flex flex-col items-center gap-2 mt-10">
       {/* ---------- WORDLE BOARD ---------- */}
       {board.map((row, rowIndex) => (
-        <div key={rowIndex} className="flex gap-2">
+        <div key={rowIndex} className="flex gap-1 justify-center">
           {row.map((letter, colIndex) => {
             const status = statuses[rowIndex][colIndex];
 
             // NINAYT colors: yellow = correct spot, blue = wrong spot, gray = not present
-            let bg = "bg-white";
-            if (status === "yellow") bg = "bg-yellow-400 text-white";
-            else if (status === "blue") bg = "bg-blue-200  text-black";
-            else if (status === "gray") bg = "bg-gray-300  text-white";
+            let tileClass =
+              status === "yellow"
+                ? "bg-yellow-400 text-white border-yellow-400"
+                : status === "blue"
+                ? "bg-blue-300 text-black border-blue-300"
+                : status === "gray"
+                ? "bg-gray-600 text-white border-gray-600"
+                : "bg-transparent text-black border-gray-400";
 
             return (
               <div
                 key={colIndex}
-                className={`w-12 h-12 border-2 border-gray-300 rounded-md flex items-center justify-center text-xl font-bold ${bg}`}
+                className={`w-14 h-14 border-2 ${tileClass} uppercase flex items-center justify-center text-2xl font-bold transition-colors duration-300`}
               >
                 {letter}
               </div>
@@ -181,8 +183,8 @@ export default function Wordle() {
               // Map key status to background color
               let keyColor = "bg-white text-black";
               if (status === "yellow") keyColor = "bg-yellow-400 text-white";
-              else if (status === "blue")  keyColor = "bg-blue-200  text-black";
-              else if (status === "gray")  keyColor = "bg-gray-400  text-white";
+              else if (status === "blue") keyColor = "bg-blue-200 text-black";
+              else if (status === "gray") keyColor = "bg-gray-400 text-white";
 
               return (
                 <button
