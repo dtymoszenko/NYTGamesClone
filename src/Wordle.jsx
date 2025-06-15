@@ -23,10 +23,14 @@ export default function Wordle() {
   const [currentRow, setCurrentRow] = useState(0);
   const [currentCol, setCurrentCol] = useState(0);
 
+  //Check if game is over, Lock input from keyboard/typing when set to true
+  const [isGameOver, setIsGameOver] = useState(false); 
+
   // Keyboard input logic
   useEffect(() => {
     const handleKeyDown = (e) => {
-      if (currentRow >= numRows) return; // Don't accept input after all guesses used
+      if (isGameOver) return;          // ignore all keys after game end
+      if (currentRow >= numRows) return; // safety: also ignore if rows exhausted
 
       const key = e.key;
 
@@ -101,10 +105,16 @@ export default function Wordle() {
             return updated;
           });
 
-          // Check win condition
+          // Check win condition or out-of-rows
           if (guess === targetWord) {
             alert("🎉 You guessed it!");
-            return; // Stop further input
+            setIsGameOver(true);       // lock game
+            return;
+          }
+          if (currentRow + 1 === numRows) {
+            alert(`The word was ${targetWord}. Better luck next time!`);
+            setIsGameOver(true);       // lock game
+            return;
           }
 
           setCurrentRow(currentRow + 1);
@@ -126,7 +136,7 @@ export default function Wordle() {
     // Attach keyboard listener
     window.addEventListener("keydown", handleKeyDown);
     return () => window.removeEventListener("keydown", handleKeyDown);
-  }, [board, currentRow, currentCol]);
+  }, [board, currentRow, currentCol, isGameOver]);
 
   // --- Virtual keyboard layout (QWERTY style) ---
   const keyboardRows = [
@@ -137,6 +147,7 @@ export default function Wordle() {
 
   // --- Handles virtual key presses by simulating real keydown events ---
   function handleVirtualKey(key) {
+    if (isGameOver) return; // ignore clicks after game end
     const event = new KeyboardEvent("keydown", {
       key,
       bubbles: true,
