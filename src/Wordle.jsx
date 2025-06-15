@@ -1,5 +1,6 @@
 import { useEffect, useState } from "react";
 
+
 export default function Wordle() {
   const numRows = 6;   // Players get 6 guesses
   const numCols = 5;   // Each guess is a 5-letter word
@@ -28,6 +29,11 @@ export default function Wordle() {
 
   //Track which tiles are currently flipping
   const [flipping, setFlipping] = useState(
+    Array.from({ length: numRows }, () => Array(numCols).fill(false))
+  );
+
+  // NEW: Track quick pop animation for when a tile gets a letter
+  const [pops, setPops] = useState(
     Array.from({ length: numRows }, () => Array(numCols).fill(false))
   );
 
@@ -142,6 +148,22 @@ export default function Wordle() {
             copy[currentRow][currentCol] = key.toUpperCase(); // Capitalize letters
             return copy;
           });
+
+          // Trigger a quick pop for tile that is being typed
+          setPops((prev) => {
+            const copy = [...prev];
+            copy[currentRow][currentCol] = true;
+            return copy;
+          });
+          // Remove pop class after animation finishes (~150 ms)
+          setTimeout(() => {
+            setPops((prev) => {
+              const copy = [...prev];
+              copy[currentRow][currentCol] = false;
+              return copy;
+            });
+          }, 180);
+
           setCurrentCol(currentCol + 1);
         }
       }
@@ -177,6 +199,7 @@ export default function Wordle() {
           {row.map((letter, colIndex) => {
             const status = statuses[rowIndex][colIndex];
             const isFlipping = flipping[rowIndex]?.[colIndex];
+            const isPopping = pops[rowIndex]?.[colIndex];
 
             return (
               <div
@@ -212,7 +235,7 @@ export default function Wordle() {
                         : status === "gray"
                         ? "bg-gray-600 text-white border-gray-600"
                         : "bg-transparent text-black border-gray-400"
-                    }`}
+                    } ${isPopping ? "pop" : ""}`}
                     style={{
                       transform: "rotateX(180deg)",
                       backfaceVisibility: "hidden",
