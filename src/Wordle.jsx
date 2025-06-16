@@ -224,7 +224,7 @@ export default function Wordle() {
   }
 
   return (
-    <div className="flex flex-col items-center gap-2 mt-10">
+    <div className="flex flex-col items-center gap-2">
       {/* ---------- WORDLE BOARD ---------- */}
       {board.map((row, rowIndex) => (
         <div key={rowIndex} className="flex gap-1 justify-center">
@@ -308,8 +308,9 @@ export default function Wordle() {
         </div>
       )}
 
+      <div className="h-5"></div>
       {/* ---------- TAILWIND KEYBOARD ---------- */}
-      <div className="flex flex-col gap-2 mt-6 w-full max-w-md">
+      <div className="flex flex-col gap-2 mt-28 w-full max-w-md">
         {keyboardRows.map((row, rowIdx) => (
           <div key={rowIdx} className="flex justify-center gap-1">
             {row.map((key) => {

@@ -1,13 +1,14 @@
 import { Routes, Route, Link } from 'react-router-dom';
 
 function App() {
+  {/* Adjust gap here in first div to change distance from header */}
   return (
-    <div className="min-h-screen bg-[#fffbea] text-gray-800">
+    <div className="min-h-screen bg-[#fffbea] text-gray-800 flex flex-col gap-8">
 
-      <header className="bg-[#fff176] shadow-md">
-        <div className="max-w-6xl mx-auto px-4 pt-6 pb-10 text-center rounded-b-2xl">
+      <header className="bg-[#fff176] shadow-md mb-8">
+        <div className="w-full px-4 pt-6 pb-16 flex flex-col items-center text-center rounded-b-2xl">
           {/* Clickable logo returns to Home */}
-          <Link to="/" className="inline-block">
+          <Link to="/" className="w-full flex justify-center">
             <h1 className="text-4xl font-extrabold mb-1">
               NinaYT
             </h1>
@@ -19,7 +20,7 @@ function App() {
       </header>
 
       {/* Main content area */}
-      <main className="mt-8 px-4 py-10 max-w-6xl mx-auto">
+      <main className="px-4 pb-10 pt-20">
         <Routes>
           <Route path="/" element={<Home />} />
           <Route path="/wordle" element={<Wordle />} />
