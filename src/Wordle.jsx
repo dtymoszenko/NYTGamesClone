@@ -26,6 +26,9 @@ export default function Wordle() {
   //Check if game is over, Lock input from keyboard/typing when set to true
   const [isGameOver, setIsGameOver] = useState(false);
 
+  // blocks keyboard / mouse input while flip animation plays
+  const [isRevealing, setIsRevealing] = useState(false);
+
   //Track which tiles are currently flipping
   const [flipping, setFlipping] = useState(
     Array.from({ length: numRows }, () => Array(numCols).fill(false))
@@ -58,7 +61,7 @@ export default function Wordle() {
   // Keyboard input logic
   useEffect(() => {
     const handleKeyDown = (e) => {
-      if (isGameOver) return;          // ignore all keys after game end
+      if (isGameOver || isRevealing) return; // also ignore during flip reveal
       if (currentRow >= numRows) return; // safety: also ignore if rows exhausted
 
       const key = e.key;
@@ -76,6 +79,7 @@ export default function Wordle() {
       } else if (key === "Enter") {
         // Only move to the next row if the current guess is full
         if (currentCol === numCols) {
+          setIsRevealing(true); // lock input for this reveal cycle
           const guess = board[currentRow].join("");
           console.log("Player guessed:", guess);
 
@@ -158,15 +162,18 @@ export default function Wordle() {
                       })
                     );
                     setIsGameOver(true);
+                    setIsRevealing(false); // re-enable typing for next guess
                     return;
                   }
                   if (currentRow + 1 === numRows) {
                     alert(`The word was ${targetWord}. Better luck next time!`);
                     setIsGameOver(true);
+                    setIsRevealing(false); // re-enable typing for next guess
                     return;
                   }
                   setCurrentRow(currentRow + 1);
                   setCurrentCol(0);
+                  setIsRevealing(false); // re-enable typing for next guess
                 }, 500);
               }
             }, i * 300);
@@ -204,7 +211,7 @@ export default function Wordle() {
     // Attach keyboard listener
     window.addEventListener("keydown", handleKeyDown);
     return () => window.removeEventListener("keydown", handleKeyDown);
-  }, [board, currentRow, currentCol, isGameOver, statuses]);  // added statuses so buildShareString is up-to-date
+  }, [board, currentRow, currentCol, isGameOver, isRevealing, statuses]);  // added statuses so buildShareString is up-to-date
 
   // --- Virtual keyboard layout (QWERTY style) ---
   const keyboardRows = [
@@ -215,7 +222,7 @@ export default function Wordle() {
 
   // --- Handles virtual key presses by simulating real keydown events ---
   function handleVirtualKey(key) {
-    if (isGameOver) return; // ignore clicks after game end
+    if (isGameOver || isRevealing) return; // block clicks during flip reveal
     const event = new KeyboardEvent("keydown", {
       key,
       bubbles: true,
