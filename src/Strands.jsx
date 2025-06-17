@@ -191,8 +191,26 @@ export default function Strands() {
     }
   };
 
-  // Called on mouse-up OR when leaving the grid — stop drag mode
-  const handleEnd = () => setIsDragging(false);
+  // Called on mouse-up OR when leaving the grid — stop drag mode and submit/clear guess
+  const handleEnd = () => {
+    setIsDragging(false);
+
+    // Only submit if user was actively dragging tiles
+    if (selected.length > 0) {
+      const word = getSelectedWord();
+
+      if (wordList.includes(word)) {
+        // Valid word: save it
+        setFound([...found, ...selected]);
+        setSelected([]);
+        setMessage(`✅ Found "${word}"!`);
+      } else {
+        // Invalid word: just clear the selection
+        setSelected([]);
+        setMessage(`❌ "${word}" is not a valid word`);
+      }
+    }
+  };
 
   /* ---------------------------------------------------------------------- */
   /*                          Word Validation                               */
@@ -289,25 +307,6 @@ export default function Strands() {
             })
           )}
         </div>
-      </div>
-
-      {/* ------------------------------ Buttons ---------------------------- */}
-      <div className="flex items-center gap-4 mt-4">
-        {/* Submit selection */}
-        <button
-          onClick={handleSubmit}
-          className="bg-blue-600 text-white px-4 py-2 rounded hover:bg-blue-500"
-        >
-          Submit
-        </button>
-
-        {/* Clear current selection */}
-        <button
-          onClick={() => setSelected([])}
-          className="text-sm text-gray-600 hover:underline"
-        >
-          Clear
-        </button>
       </div>
 
       {/* --------------------------- Feedback Text ------------------------- */}
