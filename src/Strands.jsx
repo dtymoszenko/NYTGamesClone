@@ -164,17 +164,28 @@ export default function Strands() {
     setMessage(""); // clear any old feedback
   };
 
-  // Called onMouseEnter while dragging — add tile if valid
+  // Called onMouseEnter while dragging — add tile if valid or allow backtrack
   const handleEnter = (row, col) => {
     if (!isDragging) return;
 
     const key = `${row}-${col}`;
+    const last = selected[selected.length - 1];
+    const secondLast = selected[selected.length - 2];
 
-    // Don’t allow re-use or adding used tiles
-    if (selected.includes(key) || found.includes(key)) return;
+    // Don’t allow re-selecting found or already selected tiles (except for undo logic below)
+    if (found.includes(key)) return;
+
+    // Handle going back when dragging (undo)
+    if (key === secondLast) {
+      // If the user dragged back to the second-to-last tile, pop the last one
+      setSelected(selected.slice(0, -1));
+      return;
+    }
+
+    // Skip if already selected
+    if (selected.includes(key)) return;
 
     // Only accept if it’s adjacent to the last tile in the selection
-    const last = selected[selected.length - 1];
     if (isAdjacent(last, key)) {
       setSelected([...selected, key]); // extend the word path
     }
