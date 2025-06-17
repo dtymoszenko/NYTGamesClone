@@ -102,20 +102,37 @@ export default function Strands() {
       const [r2, c2] = selected[i + 1].split("-").map(Number);
 
       // Direction from tile 1 → tile 2
-      const dRow = Math.sign(r2 - r1); // -1, 0, 1
-      const dCol = Math.sign(c2 - c1);
+      // Figure out the direction we're moving in
+      // dRow = change in row (vertical direction): -1 = up, 0 = same, 1 = down
+      // dCol = change in col (horizontal direction): -1 = left, 0 = same, 1 = right
+      const dRow = Math.sign(r2 - r1); // -1, 0, or 1
+      const dCol = Math.sign(c2 - c1); // -1, 0, or 1
 
-      // Orthogonal move (horizontal OR vertical) → draw edge-to-edge
+      // Horizontal or vertical (straight line): edge of box to edge of box
       if (dRow === 0 || dCol === 0) {
         const start = getEdge(r1, c1, dRow, dCol);
-        const end = getEdge(r2, c2, -dRow, -dCol); // opposite edge of next tile
+        const end = getEdge(r2, c2, -dRow, -dCol);
         ctx.moveTo(start.x, start.y);
         ctx.lineTo(end.x, end.y);
       }
-      // Diagonal move → quick centre-to-centre line for now
+      // Diagonal: draw from corner-to-corner instead of center-to-center (bug fix)
       else {
-        const start = getCenter(r1, c1);
-        const end = getCenter(r2, c2);
+        const cornerOffsetX = (dCol * tileSize) / 2;
+        const cornerOffsetY = (dRow * tileSize) / 2;
+
+        // Start from corner of first tile
+        const start = {
+          x: c1 * (tileSize + gap) + tileSize / 2 + cornerOffsetX,
+          y: r1 * (tileSize + gap) + tileSize / 2 + cornerOffsetY,
+        };
+
+        // End at the opposite corner of second tile
+        const end = {
+          x: c2 * (tileSize + gap) + tileSize / 2 - cornerOffsetX,
+          y: r2 * (tileSize + gap) + tileSize / 2 - cornerOffsetY,
+        };
+
+        //Do actual moving
         ctx.moveTo(start.x, start.y);
         ctx.lineTo(end.x, end.y);
       }
