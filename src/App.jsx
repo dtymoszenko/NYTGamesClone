@@ -35,26 +35,26 @@ function App() {
 /* ---------- Game Tiles ---------- */
 function Home() {
   return (
-    <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6">
+    <div className="flex justify-center flex-wrap gap-6">
       <GameCard
         icon="🟩"
         title="Wordle"
-        description="Guess the 5-letter word in 6 tries."
-        color="bg-gray-100"
+        description="Guess the 5-letter word in 6 tries!"
+        color="bg-gray-200"
         to="/wordle"
       />
       <GameCard
         icon="🔷"
         title="Strands"
-        description="Find hidden words and uncover the theme."
-        color="bg-blue-100"
+        description="Solve the Hidden Theme!"
+        color="bg-teal-200"
         to="/strands"
       />
       <GameCard
         icon="✏️"
         title="Crossword"
-        description="A classic crossword puzzle."
-        color="bg-yellow-100"
+        description="Solve the mini puzzle of the day!"
+        color="bg-yellow-200"
         to="/crossword"
       />
     </div>
@@ -66,24 +66,29 @@ function GameCard({ title, description, color, to, icon }) {
   return (
     <Link
       to={to}
-      className={`flex flex-col justify-between rounded-xl shadow-md p-6 hover:shadow-lg transition ${color}`}
+      className="w-[368px] h-[336px] rounded-lg overflow-hidden border border-gray-200 shadow-sm hover:shadow-md transition flex flex-col"
     >
-      <div>
-        <div className="text-5xl mb-4">{icon}</div>
-        <h2 className="text-2xl font-bold">{title}</h2>
-        <p className="text-sm text-gray-700 mt-1">{description}</p>
+      {/* header section */}
+      <div className={`flex flex-col items-center justify-center ${color} py-8`}>
+        <span className="text-5xl">{icon}</span>
+        <h2 className="mt-2 text-2xl font-bold">{title}</h2>
       </div>
 
-      <button className="mt-6 w-full bg-white rounded-full px-4 py-2 text-sm font-medium shadow hover:bg-gray-100">
-        Play
-      </button>
+      {/* body section */}
+      <div className="bg-white px-6 pt-4 pb-6 flex flex-col justify-between flex-grow text-center">
+        <p className="text-gray-700 text-sm">{description}</p>
+        <button className="mt-4 px-6 py-2 rounded-full bg-white border border-gray-300 font-medium hover:bg-gray-100">
+          Play
+        </button>
+      </div>
     </Link>
   );
 }
 
+
 /* ---------- Links to Games ---------- */
 import Wordle from "./Wordle.jsx";
-function Strands()  { return <p className="text-center mt-20 text-xl">🔷 Strands game will go here!</p>; }
+import Strands from './Strands.jsx';
 function Crossword(){ return <p className="text-center mt-20 text-xl">✏️ Crossword game will go here!</p>; }
 
 export default App;
