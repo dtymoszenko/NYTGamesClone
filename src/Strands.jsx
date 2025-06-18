@@ -42,6 +42,9 @@ export default function Strands() {
   // All tiles that have been confirmed as part of a found word
   const [found, setFound] = useState([]);
 
+  // Paths for words that have been found (so their lines stay visible + blue)
+  const [paths, setPaths] = useState([]);
+
   // Quick feedback text for the user (“✅ …” or “❌ …”)
   const [message, setMessage] = useState("");
 
@@ -77,69 +80,74 @@ export default function Strands() {
   /*                       Canvas Drawing Effect                            */
   /* ---------------------------------------------------------------------- */
 
-  // Whenever `selected` changes, re-paint the path that links the tiles
+  // Re-paint whenever the current drag *or* saved paths change
   useEffect(() => {
     const canvas = canvasRef.current;
     if (!canvas) return;
 
     const ctx = canvas.getContext("2d");
-    ctx.clearRect(0, 0, canvas.width, canvas.height); // wipe old path
+    ctx.clearRect(0, 0, canvas.width, canvas.height);
 
-    // Need at least two tiles to draw a segment
-    if (selected.length < 2) return;
+    // Helper to draw one complete path in a given colour
+    const drawPath = (path, colour) => {
+  // Ignore paths with fewer than two tiles — nothing to draw
+  if (path.length < 2) return;
 
-    // Path visuals
-    ctx.strokeStyle = "#94a3b8"; // Tailwind slate-400 (subtle grey line)
-    ctx.lineWidth = 6;
-    ctx.lineJoin = "round";
-    ctx.lineCap = "round";
+  // Set stroke appearance (color, width, corner style, end caps)
+  ctx.strokeStyle = colour; // Color of the connecting line
+  ctx.lineWidth = 6;        // Line thickness
+  ctx.lineJoin = "round";   // Rounded corners between segments
+  ctx.lineCap = "round";    // Rounded line ends
+  ctx.beginPath();          // Start a new drawing path
 
-    ctx.beginPath();
+  // Loop through each pair of consecutive tiles in the path
+  for (let i = 0; i < path.length - 1; i++) {
+    // Convert "row-col" strings into numeric row and column values
+    const [r1, c1] = path[i].split("-").map(Number);
+    const [r2, c2] = path[i + 1].split("-").map(Number);
 
-    // Walk pair-by-pair through `selected` to draw each segment
-    for (let i = 0; i < selected.length - 1; i++) {
-      const [r1, c1] = selected[i].split("-").map(Number);
-      const [r2, c2] = selected[i + 1].split("-").map(Number);
+    // Determine the direction from the first tile to the next
+    const dRow = Math.sign(r2 - r1); // Vertical movement: -1, 0, or 1
+    const dCol = Math.sign(c2 - c1); // Horizontal movement: -1, 0, or 1
 
-      // Direction from tile 1 → tile 2
-      // Figure out the direction we're moving in
-      // dRow = change in row (vertical direction): -1 = up, 0 = same, 1 = down
-      // dCol = change in col (horizontal direction): -1 = left, 0 = same, 1 = right
-      const dRow = Math.sign(r2 - r1); // -1, 0, or 1
-      const dCol = Math.sign(c2 - c1); // -1, 0, or 1
+    if (dRow === 0 || dCol === 0) {
+      // For straight lines (horizontal or vertical):
+      // draw from the edge of the first tile to the edge of the second tile
+      const start = getEdge(r1, c1, dRow, dCol);
+      const end = getEdge(r2, c2, -dRow, -dCol);
+      ctx.moveTo(start.x, start.y);
+      ctx.lineTo(end.x, end.y);
+    } else {
+      // For diagonal lines:
+      // draw from one corner of the first tile to the opposite corner of the second tile
+      const offX = (dCol * tileSize) / 2;
+      const offY = (dRow * tileSize) / 2;
 
-      // Horizontal or vertical (straight line): edge of box to edge of box
-      if (dRow === 0 || dCol === 0) {
-        const start = getEdge(r1, c1, dRow, dCol);
-        const end = getEdge(r2, c2, -dRow, -dCol);
-        ctx.moveTo(start.x, start.y);
-        ctx.lineTo(end.x, end.y);
-      }
-      // Diagonal: draw from corner-to-corner instead of center-to-center (bug fix)
-      else {
-        const cornerOffsetX = (dCol * tileSize) / 2;
-        const cornerOffsetY = (dRow * tileSize) / 2;
+      const start = {
+        x: c1 * (tileSize + gap) + tileSize / 2 + offX,
+        y: r1 * (tileSize + gap) + tileSize / 2 + offY,
+      };
+      const end = {
+        x: c2 * (tileSize + gap) + tileSize / 2 - offX,
+        y: r2 * (tileSize + gap) + tileSize / 2 - offY,
+      };
 
-        // Start from corner of first tile
-        const start = {
-          x: c1 * (tileSize + gap) + tileSize / 2 + cornerOffsetX,
-          y: r1 * (tileSize + gap) + tileSize / 2 + cornerOffsetY,
-        };
-
-        // End at the opposite corner of second tile
-        const end = {
-          x: c2 * (tileSize + gap) + tileSize / 2 - cornerOffsetX,
-          y: r2 * (tileSize + gap) + tileSize / 2 - cornerOffsetY,
-        };
-
-        //Do actual moving
-        ctx.moveTo(start.x, start.y);
-        ctx.lineTo(end.x, end.y);
-      }
+      ctx.moveTo(start.x, start.y);
+      ctx.lineTo(end.x, end.y);
     }
+  }
 
-    ctx.stroke();
-  }, [selected]);
+  // Render the entire line path to the canvas
+  ctx.stroke();
+};
+
+
+    // Draw words that are found in blue and make them stay
+    paths.forEach((p) => drawPath(p, "#3b82f6")); // Tailwind blue-500
+
+    // Draw the current in-progress drag in gray (no change from before)
+    drawPath(selected, "#94a3b8"); // Tailwind slate-400
+  }, [selected, paths]);
 
   /* ---------------------------------------------------------------------- */
   /*                        Selection / Drag Logic                          */
@@ -202,6 +210,7 @@ export default function Strands() {
       if (wordList.includes(word)) {
         // Valid word: save it
         setFound([...found, ...selected]);
+        setPaths((p) => [...p, selected]);
         setSelected([]);
         setMessage(`✅ Found "${word}"!`);
       } else {
@@ -232,6 +241,7 @@ export default function Strands() {
     if (wordList.includes(word)) {
       // Yay! Mark tiles as “found” and clear the selection
       setFound([...found, ...selected]);
+      setPaths((p) => [...p, selected]);
       setSelected([]);
       setMessage(`✅ Found "${word}"!`);
     } else {
@@ -295,7 +305,7 @@ export default function Strands() {
                               transition-colors
                     ${
                       isFound
-                        ? "bg-green-400 border-green-600 text-white" // word found
+                        ? "bg-blue-300 border-blue-500 text-white" // word found
                         : isSel
                         ? "bg-gray-200 border-gray-400" // actively selecting
                         : "bg-white border-gray-300 hover:bg-gray-100" // normal tile
