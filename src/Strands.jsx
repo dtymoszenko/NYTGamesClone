@@ -223,29 +223,37 @@ export default function Strands() {
 
   //Functions for mobile support (touching and dragging on MOBILE)
   // Handle finger tap start (touch equivalent of mouse down)
+  // Handle finger tap start
   const handleTouchStart = (e, row, col) => {
-    e.preventDefault();
+    e.preventDefault(); // Prevent scrolling
+    setIsDragging(true); // Starting dragging condition to be true hardcoded (mobile)
     handleStart(row, col);
   };
 
-  // Handle finger drag over tiles
+  // Handle finger drag across grid
   const handleTouchMove = (e) => {
-    e.preventDefault();
+    e.preventDefault(); // Prevent scrolling
 
     const touch = e.touches[0];
     const target = document.elementFromPoint(touch.clientX, touch.clientY);
 
-    if (target?.dataset?.row !== undefined && target?.dataset?.col !== undefined) {
+    //Updated touch dragging logic to track finger movement and call handleEnter repeatedly
+    if (
+      target &&
+      target.dataset &&
+      target.dataset.row !== undefined &&
+      target.dataset.col !== undefined
+    ) {
       const row = parseInt(target.dataset.row);
       const col = parseInt(target.dataset.col);
       handleEnter(row, col);
     }
-  };
+};
 
-  // Handle finger lift (touch equivalent of mouse up)
-  const handleTouchEnd = () => {
-    handleEnd();
-  };
+// Handle finger release
+const handleTouchEnd = () => {
+  handleEnd();
+};
 
 
 
@@ -325,6 +333,8 @@ export default function Strands() {
               return (
                 <div
                   key={key}
+                  data-row={r}
+                  data-col={c}
                   onMouseDown={() => handleStart(r, c)} // begin drag
                   onMouseEnter={() => handleEnter(r, c)} // continue drag
                   onTouchStart={(e) => handleTouchStart(e, r, c)}
