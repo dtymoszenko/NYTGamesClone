@@ -310,7 +310,7 @@ const handleTouchEnd = () => {
       </div>
 
       {/* ------------------------ Grid + Canvas Layer ----------------------- */}
-      <div className="relative">
+      <div className="relative w-[384px] h-[576px]">
         {/* Canvas sits on top of grid, pointer-events-none means clicks pass through */}
         <canvas
           ref={canvasRef}
