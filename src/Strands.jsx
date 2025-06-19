@@ -4,30 +4,33 @@ import { useState, useRef, useEffect } from "react";
 /*                               PUZZLE DATA                                  */
 /* -------------------------------------------------------------------------- */
 
-// 6×8 letter grid (hard-coded sample puzzle)
+// 6×8 letter grid (Actual puzzle!!!)
 // Row 0 → top row, Row 7 → bottom row
 const initialGrid = [
-  ["D", "U", "P", "I", "U", "I"],
-  ["E", "T", "E", "A", "S", "T"],
-  ["R", "P", "N", "T", "M", "E"],
-  ["E", "E", "O", "P", "E", "I"],
-  ["D", "U", "L", "I", "U", "N"],
-  ["S", "A", "C", "E", "E", "N"],
-  ["O", "T", "E", "N", "R", "U"],
-  ["N", "A", "S", "O", "C", "T"],
+  ["V", "I", "N", "G", "G", "O"],
+  ["O", "L", "S", "O", "G", "R"],
+  ["E", "I", "U", "E", "U", "C"],
+  ["T", "F", "P", "P", "G", "E"],
+  ["H", "U", "N", "A", "E", "L"],
+  ["G", "L", "T", "F", "U", "N"],
+  ["U", "H", "E", "V", "N", "Y"],
+  ["O", "T", "R", "E", "L", "C"],
 ];
 
-// Valid answers for THIS puzzle (spangram not enforced yet)
+
+
+// Valid answers for personal puzzle.. I'm so excited to show this to her
 const wordList = [
-  "DUET",
-  "NOTES",
-  "SCALE",
-  "PIANO",
-  "TONE",
-  "SONG",
-  "OCTAVE",
-  "INSTRUMENT",
+  "CUPPIE", //spanogram
+  "ELEGANT",
+  "THOUGHTFUL",
+  "CLEVER",
+  "GORGEOUS",
+  "FUNNY",
+  "LOVING",
 ];
+
+
 
 /* -------------------------------------------------------------------------- */
 /*                            MAIN COMPONENT                                  */
@@ -44,6 +47,9 @@ export default function Strands() {
 
   // Paths for words that have been found (so their lines stay visible + blue)
   const [paths, setPaths] = useState([]);
+
+  // Keys for tiles that belong to the spangram (“CUPPIE”)
+  const [spangramTiles, setSpangramTiles] = useState([]);
 
   // Quick feedback text for the user (“✅ …” or “❌ …”)
   const [message, setMessage] = useState("");
@@ -143,7 +149,18 @@ export default function Strands() {
 
 
     // Draw words that are found in blue and make them stay
-    paths.forEach((p) => drawPath(p, "#3b82f6")); // Tailwind blue-500
+    paths.forEach((path) => {
+  const word = path
+    .map((coord) => {
+      const [r, c] = coord.split("-").map(Number);
+      return initialGrid[r][c];
+    })
+    .join("");
+
+  const color = word === "CUPPIE" ? "#facc15" : "#3b82f6"; // yellow or tailwind blue500
+  drawPath(path, color);
+});
+
 
     // Draw the current in-progress drag in gray (no change from before)
     drawPath(selected, "#94a3b8"); // Tailwind slate-400
@@ -211,6 +228,11 @@ export default function Strands() {
         // Valid word: save it
         setFound([...found, ...selected]);
         setPaths((p) => [...p, selected]);
+
+        if (getSelectedWord() === "CUPPIE") {
+          setSpangramTiles(selected); // mark as should be yellow when completed (because == hardcoded spanogram)
+        } 
+
         setSelected([]);
         setMessage(`✅ Found "${word}"!`);
       } else {
@@ -278,6 +300,11 @@ const handleTouchEnd = () => {
       // Yay! Mark tiles as “found” and clear the selection
       setFound([...found, ...selected]);
       setPaths((p) => [...p, selected]);
+
+      if (getSelectedWord() === "CUPPIE") {
+        setSpangramTiles(selected); // mark as should be yellow when completed (because == hardcoded spanogram)
+      } 
+
       setSelected([]);
       setMessage(`✅ Found "${word}"!`);
     } else {
@@ -301,7 +328,7 @@ const handleTouchEnd = () => {
       <div className="text-center">
         {/* Puzzle theme prompt */}
         <p className="text-sm font-semibold text-blue-600">TODAY’S THEME</p>
-        <h2 className="text-2xl font-bold mt-1">Key notes</h2>
+        <h2 className="text-2xl font-bold mt-1">The Perfect Girl</h2>
 
         {/* Found-word counter (we divide by 4 b/c each word avg 4 letters.. this will be hardcoded to whatever I set though so doesn't rly matter) */}
         <p className="mt-2 text-gray-700 text-sm">
@@ -330,6 +357,15 @@ const handleTouchEnd = () => {
               const isSel = selected.includes(key); // currently highlighted
               const isFound = found.includes(key); // already confirmed word
 
+              //Used google/stack/chatGPT to help with logic of changing color based on spanogram
+              const tileClass = isFound
+                ? spangramTiles.includes(key)
+                  ? "bg-yellow-300 border-yellow-500 text-white"   // spangram tiles
+                  : "bg-blue-300  border-blue-500  text-white"     // regular found word
+                : isSel
+                  ? "bg-gray-200 border-gray-400"                  // actively selecting
+                  : "bg-white    border-gray-300 hover:bg-gray-100"; // normal tile
+
               return (
                 <div
                   key={key}
@@ -343,14 +379,7 @@ const handleTouchEnd = () => {
                   // Dynamic Tailwind classes: colour depends on status
                   className={`w-14 h-14 text-xl font-bold border rounded-md 
                               flex items-center justify-center cursor-pointer 
-                              transition-colors
-                    ${
-                      isFound
-                        ? "bg-blue-300 border-blue-500 text-white" // word found
-                        : isSel
-                        ? "bg-gray-200 border-gray-400" // actively selecting
-                        : "bg-white border-gray-300 hover:bg-gray-100" // normal tile
-                    }`}
+                              transition-colors ${tileClass}`}
                 >
                   {letter}
                 </div>
