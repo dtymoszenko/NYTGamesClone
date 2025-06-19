@@ -312,7 +312,7 @@ export default function Strands() {
         />
 
         {/* 6×8 letter grid (CSS grid) */}
-        <div className="grid grid-cols-6 gap-2 select-none">
+        <div className="grid grid-cols-6 gap-2 select-none touch-none">
           {initialGrid.map((row, r) =>
             row.map((letter, c) => {
               // Convert (row,col) into a string key for quick lookups
