@@ -1,4 +1,6 @@
 import { useState, useRef, useEffect } from "react";
+import confetti from "canvas-confetti";
+
 
 /* -------------------------------------------------------------------------- */
 /*                               PUZZLE DATA                                  */
@@ -30,6 +32,9 @@ const wordList = [
   "LOVING",
 ];
 
+const SPANGRAM = "CUPPIE";
+
+
 
 
 /* -------------------------------------------------------------------------- */
@@ -56,6 +61,16 @@ export default function Strands() {
 
   // True only while the mouse button is held down (enables drag-select)
   const [isDragging, setIsDragging] = useState(false);
+
+  // Stores words that have been found in the puzzle properly
+  const [foundWords, setFoundWords] = useState([]);
+
+  // Show the win screen modal once the strands puzzle is completed
+  const [showWin,   setShowWin]   = useState(false);
+
+  // State for if the string is copied or not (result to share)
+  const [copied, setCopied] = useState(false); 
+
 
   // Reference to our <canvas> element so we can draw connecting lines
   const canvasRef = useRef(null);
@@ -224,14 +239,33 @@ export default function Strands() {
     if (selected.length > 0) {
       const word = getSelectedWord();
 
-      if (wordList.includes(word)) {
+      //Ensure that a word is included in the list and not already found
+      if (wordList.includes(word) && !foundWords.includes(word)) {
+
         // Valid word: save it
         setFound([...found, ...selected]);
         setPaths((p) => [...p, selected]);
 
+        // record the word itself
+        const newWords = [...foundWords, word];
+        setFoundWords(newWords);
+
+        //mark tiles as yellow if spanogram
         if (getSelectedWord() === "CUPPIE") {
           setSpangramTiles(selected); // mark as should be yellow when completed (because == hardcoded spanogram)
         } 
+        
+        //Show the win modal if all words have been found
+        if (newWords.length === wordList.length) {
+          setShowWin(true);
+          setCopied(false);
+          //Confetti when winning!! :D
+          confetti({
+            particleCount: 180,
+            spread: 90,
+            origin: { y: 0.6 },
+          });
+        }
 
         setSelected([]);
         setMessage(`✅ Found "${word}"!`);
@@ -301,6 +335,22 @@ const handleTouchEnd = () => {
       setFound([...found, ...selected]);
       setPaths((p) => [...p, selected]);
 
+      // rrecord the word itself
+      const newWords = [...foundWords, word];
+      setFoundWords(newWords);
+
+      // Show win screen if puzzle is completed
+      if (newWords.length === wordList.length) {
+        setShowWin(true);
+        setCopied(false);
+        //confetti for winning!!
+        confetti({
+          particleCount: 180,
+          spread: 90,
+          origin: { y: 0.6 },
+        });
+      } 
+
       if (getSelectedWord() === "CUPPIE") {
         setSpangramTiles(selected); // mark as should be yellow when completed (because == hardcoded spanogram)
       } 
@@ -318,6 +368,16 @@ const handleTouchEnd = () => {
   /*                              RENDER                                    */
   /* ---------------------------------------------------------------------- */
 
+  // Build a row of dots in the exact order the player found the words
+  // build 4-on-top, 3-on-bottom dot layout just like how NYT does it
+  const dots = foundWords.map((w) => (w === SPANGRAM ? "🟡" : "🔵"));
+  const dotString = dots.slice(0, 4).join("") + "\n" + dots.slice(4).join("");
+
+  // Text that is built which is what will be copied to clipboard (if button is clicked)
+  const shareText = `NinaYT Strands - The Perfect Girl\n${dotString}\n`;
+
+
+
   return (
     <div
       className="flex flex-col items-center gap-6 px-4 pb-10"
@@ -327,12 +387,12 @@ const handleTouchEnd = () => {
       {/* --------------------------- Header / Stats ------------------------- */}
       <div className="text-center">
         {/* Puzzle theme prompt */}
-        <p className="text-sm font-semibold text-blue-600">TODAY’S THEME</p>
+        <p className="text-sm font-semibold text-blue-600">TODAY'S THEME</p>
         <h2 className="text-2xl font-bold mt-1">The Perfect Girl</h2>
 
-        {/* Found-word counter (we divide by 4 b/c each word avg 4 letters.. this will be hardcoded to whatever I set though so doesn't rly matter) */}
+        {/* Found word Counter (hardcoded for this example*/}
         <p className="mt-2 text-gray-700 text-sm">
-          {Math.floor(found.length / 4)} of 7 theme words found.
+          {foundWords.length} of 7 theme words found.
         </p>
       </div>
 
@@ -394,7 +454,38 @@ const handleTouchEnd = () => {
         <p className="text-center text-sm text-gray-700 mt-2">{message}</p>
       )}
 
-      {/* TODO: add fade / animation to tile colour transitions for extra polish */}
+    {showWin && (
+      <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50">
+      <div className="bg-white p-6 rounded-lg text-center w-72 shadow-xl rounded-2xl">
+      <h2 className="text-3xl font-bold mb-2">Perfect!</h2>
+      <p className="font-semibold">Strands – The Perfect Girl</p>
+
+      {/* dots */}
+      <pre className="text-2xl mt-4 whitespace-pre">{dotString}</pre>
+
+      {/* Buttons for copy or closing (similar to wordle) */}
+      <div className="mt-4 flex flex-col gap-2">
+        <button
+          onClick={async () => {
+            await navigator.clipboard.writeText(shareText);
+            setCopied(true);
+          }}
+          className="px-4 py-2 bg-green-500 text-white rounded hover:bg-green-600"
+        >
+          {copied ? "Copied ✔" : "Copy Results"}
+        </button>
+
+        <button
+          onClick={() => setShowWin(false)}
+          className="px-4 py-2 bg-blue-500 text-white rounded hover:bg-blue-600"
+        >
+          Close
+        </button>
+      </div>
+    </div>
+  </div>
+)}
+
     </div>
   );
 }
