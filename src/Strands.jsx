@@ -216,10 +216,38 @@ export default function Strands() {
       } else {
         // Invalid word: just clear the selection
         setSelected([]);
-        setMessage(`❌ "${word}" is not a valid word`);
+        setMessage(`❌ "${word}" is not apart of this puzzle!`);
       }
     }
   };
+
+  //Functions for mobile support (touching and dragging on MOBILE)
+  // Handle finger tap start (touch equivalent of mouse down)
+  const handleTouchStart = (e, row, col) => {
+    e.preventDefault();
+    handleStart(row, col);
+  };
+
+  // Handle finger drag over tiles
+  const handleTouchMove = (e) => {
+    e.preventDefault();
+
+    const touch = e.touches[0];
+    const target = document.elementFromPoint(touch.clientX, touch.clientY);
+
+    if (target?.dataset?.row !== undefined && target?.dataset?.col !== undefined) {
+      const row = parseInt(target.dataset.row);
+      const col = parseInt(target.dataset.col);
+      handleEnter(row, col);
+    }
+  };
+
+  // Handle finger lift (touch equivalent of mouse up)
+  const handleTouchEnd = () => {
+    handleEnd();
+  };
+
+
 
   /* ---------------------------------------------------------------------- */
   /*                          Word Validation                               */
@@ -299,6 +327,9 @@ export default function Strands() {
                   key={key}
                   onMouseDown={() => handleStart(r, c)} // begin drag
                   onMouseEnter={() => handleEnter(r, c)} // continue drag
+                  onTouchStart={(e) => handleTouchStart(e, r, c)}
+                  onTouchMove={handleTouchMove}
+                  onTouchEnd={handleTouchEnd}
                   // Dynamic Tailwind classes: colour depends on status
                   className={`w-14 h-14 text-xl font-bold border rounded-md 
                               flex items-center justify-center cursor-pointer 
