@@ -30,7 +30,7 @@ function App() {
           <Route path="/" element={<Home />} />
           <Route path="/wordle" element={<Wordle />} />
           <Route path="/strands" element={<Strands />} />
-          <Route path="/crossword" element={<Crossword />} />
+          <Route path="/mini" element={<Mini />} />
         </Routes>
       </main>
     </div>
@@ -92,7 +92,7 @@ function Home() {
         title="The Mini"
         description=""
         color="bg-yellow-200"
-        to="/crossword"
+        to="/mini"
       >
         <button
           type="button"
@@ -140,10 +140,6 @@ function GameCard({ title, description, color, to, icon, children }) {
 /* ---------- Links to Games ---------- */
 import Wordle from "./Wordle.jsx";
 import Strands from "./Strands.jsx";
-function Crossword() {
-  return (
-    <p className="text-center mt-20 text-xl">✏️ Crossword game will go here!</p>
-  );
-}
+import Mini from "./Mini.jsx";
 
 export default App;
