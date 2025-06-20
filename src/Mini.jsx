@@ -1,155 +1,170 @@
 // Mini.jsx
 // ---------------------------------------------------------------------------
-// 5×5 crossword grid with clue numbers, letter input, styled keyboard,
-// answer-checking that locks correct letters (blue text) and slashes wrong ones.
+// 5×5 crossword grid with black boxes, automatic clue numbers, answer checks,
+// blue-text locks for correct letters, red slashes for wrong letters, and a
+// Wordle-style on-screen keyboard.
 // ---------------------------------------------------------------------------
 
-import { useState } from "react";
+import { useState, useMemo } from "react";
 
-/* --------------------------- GRID CONSTANTS --------------------------- */
+/* ---------- GRID CONSTANTS ---------- */
 const SIZE = 5; // 5 rows × 5 columns
-const CELL = 72; // Pixel size for each cell
+const CELL = 72; // pixel size of each square
 
-// QWERTY keyboard layout for the on-screen input
+/* ---------- ON-SCREEN KEYBOARD ---------- */
 const kbRows = [
   ["Q", "W", "E", "R", "T", "Y", "U", "I", "O", "P"],
   ["A", "S", "D", "F", "G", "H", "J", "K", "L"],
   ["Z", "X", "C", "V", "B", "N", "M", "Backspace", "Enter"],
 ];
 
-/* --------------------------- HARD-CODED DATA -------------------------- */
-// Clue numbers for specific cells
-const numbers = { "0-0": 1, "0-2": 2, "1-1": 3, "2-0": 4, "3-3": 5 };
+/* ---------- BOARD DATA ---------- */
+const blackBoxes = new Set(["0-3", "0-4", "1-4", "4-0"]); // black squares
 
-// Full solution to the crossword — answers for checking
+// Hardcoded board
 const solution = [
-  ["C", "A", "T", "S", "Y"],
-  ["A", "R", "E", "N", "A"],
-  ["R", "E", "A", "C", "T"],
-  ["E", "A", "S", "E", "L"],
-  ["D", "U", "E", "L", "S"],
+  ["S", "P", "A", "", ""],
+  ["H", "A", "N", "D", ""],
+  ["O", "R", "G", "A", "N"],
+  ["P", "I", "E", "T", "A"],
+  ["", "S", "L", "A", "Y"],
 ];
 
-/* ---------------------------------------------------------------------- */
+/* ------------------------------------------------------------------------ */
 export default function Mini() {
-  // Tracks what's typed into each cell
+  /* ---------- STATE ---------- */
   const [board, setBoard] = useState(
     Array.from({ length: SIZE }, () => Array(SIZE).fill(""))
   );
-
-  // Tracks the status of each cell: correct (true), incorrect (false), or untouched (null)
   const [status, setStatus] = useState(
     Array.from({ length: SIZE }, () => Array(SIZE).fill(null))
-  );
+  ); // null|true|false
+  const [selected, setSelected] = useState(null); // [row,col]
 
-  // Currently selected cell — used for placing letters
-  const [selected, setSelected] = useState(null);
+  /* ---------- AUTO-NUMBERING ---------- */
+  const clueNumbers = useMemo(() => {
+    let across = 1;
+    let down = 1;
+    const map = {}; // { "r-c": num }
 
-  /* ------------------------- HANDLERS --------------------------------- */
+    for (let r = 0; r < SIZE; r++) {
+      for (let c = 0; c < SIZE; c++) {
+        const key = `${r}-${c}`;
+        if (blackBoxes.has(key)) continue;
 
-  // When a cell is clicked, mark it as selected
-  function handleCellClick(r, c) {
-    setSelected([r, c]);
-  }
+        const startsAcross = c === 0 || blackBoxes.has(`${r}-${c - 1}`);
+        const startsDown = r === 0 || blackBoxes.has(`${r - 1}-${c}`);
 
-  // Main input logic — handles all key presses from virtual or physical keyboard
-  function handleKeyPress(key) {
-    if (!selected) return;
-    const [r, c] = selected;
-
-    // Don't allow edits to a correct answer
-    if (status[r][c] === true) return;
-
-    if (key === "Backspace") {
-      updateCell(r, c, ""); // Clear letter
-      return;
+        if (startsAcross) {
+          map[key] = across++; // give the Across number
+          if (startsDown) down++; // <-- keep Down counter in sync
+        } else if (startsDown) {
+          map[key] = down++;
+        }
+      }
     }
+    return map;
+  }, []);
 
-    // Only accept A-Z
-    const ch = key.toUpperCase();
-    if (/^[A-Z]$/.test(ch)) {
-      updateCell(r, c, ch); // Add letter to cell
-    }
-  }
+  /* ---------- HANDLERS ---------- */
+  const handleCellClick = (r, c) => {
+    if (!blackBoxes.has(`${r}-${c}`)) setSelected([r, c]);
+  };
 
-  // Actually updates the board and clears status for a cell
-  function updateCell(r, c, char) {
+  const updateCell = (r, c, ch) => {
     setBoard((prev) =>
-      prev.map((row, ri) =>
-        row.map((v, ci) => (ri === r && ci === c ? char : v))
-      )
+      prev.map((row, ri) => row.map((v, ci) => (ri === r && ci === c ? ch : v)))
     );
-
-    // Reset check status for this cell
     setStatus((prev) =>
       prev.map((row, ri) =>
         row.map((v, ci) => (ri === r && ci === c ? null : v))
       )
     );
-  }
+  };
 
-  // For physical keyboard support
-  function handlePhysicalKey(e) {
-    handleKeyPress(e.key);
-  }
+  const handleKey = (key) => {
+    if (!selected) return;
+    const [r, c] = selected;
+    if (blackBoxes.has(`${r}-${c}`) || status[r][c] === true) return;
 
-  // Runs when user clicks "Check Answers" — compares board to solution
-  function checkAnswers() {
-    const checked = board.map((row, r) =>
-      row.map((val, c) => (val ? val === solution[r][c] : null))
+    if (key === "Backspace") {
+      updateCell(r, c, "");
+      return;
+    }
+    const ch = key.toUpperCase();
+    if (/^[A-Z]$/.test(ch)) updateCell(r, c, ch);
+  };
+
+  const checkAnswers = () => {
+    setStatus((prev) =>
+      prev.map((row, r) =>
+        row.map((_, c) => {
+          const k = `${r}-${c}`;
+          if (blackBoxes.has(k)) return null;
+          return board[r][c] && board[r][c] === solution[r][c];
+        })
+      )
     );
-    setStatus(checked);
-  }
+  };
 
-  /* ------------------------- RENDER ----------------------------------- */
+  /* ---------- RENDER ---------- */
   return (
     <div
       className="p-4 flex flex-col items-center gap-6"
       tabIndex={0}
-      onKeyDown={handlePhysicalKey} // Enables typing into the grid
+      onKeyDown={(e) => handleKey(e.key)}
     >
       <h1 className="text-2xl font-bold">Mini Crossword</h1>
 
-      {/* Crossword grid itself */}
+      {/* GRID */}
       <div
         className="grid"
         style={{
-          gridTemplateColumns: `repeat(${SIZE}, ${CELL}px)`,
-          gridTemplateRows: `repeat(${SIZE}, ${CELL}px)`,
+          gridTemplateColumns: `repeat(${SIZE},${CELL}px)`,
+          gridTemplateRows: `repeat(${SIZE},${CELL}px)`,
         }}
       >
         {board.flatMap((row, r) =>
           row.map((letter, c) => {
             const key = `${r}-${c}`;
-            const flag = status[r][c]; // true / false / null
-            const isSel = selected?.[0] === r && selected?.[1] === c;
 
-            // Color styling
-            const textColor = flag === true ? "text-blue-600" : "text-black";
-            const outline = isSel ? "outline outline-2 outline-blue-400" : "";
+            /* ----- Black square ----- */
+            if (blackBoxes.has(key))
+              return (
+                <div
+                  key={key}
+                  className="bg-black border border-black"
+                  style={{ width: CELL, height: CELL }}
+                />
+              );
+
+            /* ----- Typable square ----- */
+            const isSel = selected?.[0] === r && selected?.[1] === c;
+            const flag = status[r][c];
+            const text = flag === true ? "text-blue-600" : "text-black";
+            const ring = isSel ? "outline outline-2 outline-blue-400" : "";
 
             return (
               <div
                 key={key}
                 onClick={() => handleCellClick(r, c)}
-                className={`relative flex items-center justify-center border border-black bg-white text-2xl font-semibold select-none cursor-pointer ${outline} ${textColor}`}
+                className={`relative flex items-center justify-center border border-black bg-white text-2xl font-semibold select-none cursor-pointer ${ring} ${text}`}
                 style={{ width: CELL, height: CELL }}
               >
-                {/* Show clue number if applicable */}
-                {numbers[key] && (
+                {/* clue number */}
+                {clueNumbers[key] && (
                   <span className="absolute top-[6px] left-[8px] text-base font-bold text-gray-800">
-                    {numbers[key]}
+                    {clueNumbers[key]}
                   </span>
                 )}
 
-                {/* If incorrect, show red slash */}
+                {/* red slash if wrong */}
                 {flag === false && (
                   <span className="pointer-events-none absolute inset-0 flex items-center justify-center">
                     <span className="w-full h-[2px] bg-red-500 rotate-[-45deg]" />
                   </span>
                 )}
 
-                {/* Display the typed letter */}
                 {letter}
               </div>
             );
@@ -157,28 +172,26 @@ export default function Mini() {
         )}
       </div>
 
-      {/* On-screen virtual keyboard */}
+      {/* KEYBOARD */}
       <div className="flex flex-col items-center gap-2 mt-6 px-2 w-full max-w-xl">
         {kbRows.map((row, i) => (
           <div key={i} className="flex justify-center gap-1 w-full">
-            {row.map((key) => (
+            {row.map((k) => (
               <button
-                key={key}
-                onClick={() => handleKeyPress(key)}
+                key={k}
+                onClick={() => handleKey(k)}
                 className={`flex-1 bg-white sm:flex-none sm:w-10 md:w-12 lg:w-14 h-12 rounded-lg shadow text-sm font-medium border border-gray-300 hover:brightness-105 transition ${
-                  key === "Enter" || key === "Backspace"
-                    ? "sm:w-20 md:w-24"
-                    : ""
+                  k === "Enter" || k === "Backspace" ? "sm:w-20 md:w-24" : ""
                 }`}
               >
-                {key === "Backspace" ? "⌫" : key}
+                {k === "Backspace" ? "⌫" : k}
               </button>
             ))}
           </div>
         ))}
       </div>
 
-      {/* Check button to validate the answers */}
+      {/* CHECK BUTTON */}
       <button
         onClick={checkAnswers}
         className="mt-4 bg-blue-500 text-white px-4 py-2 rounded shadow hover:brightness-110 transition"
