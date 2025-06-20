@@ -1,9 +1,9 @@
 import { Routes, Route, Link } from "react-router-dom";
+import Wordle from "./Wordle.jsx";
+import Strands from "./Strands.jsx";
+import Mini from "./Mini.jsx";
 
 function App() {
-  {
-    /* Adjust gap here in first div to change distance from header */
-  }
   return (
     <div className="min-h-screen bg-[#fffbea] text-gray-800 flex flex-col gap-8">
       <header className="w-full bg-[#fff176] shadow-md mb-8 rounded-b-2xl">
@@ -24,7 +24,6 @@ function App() {
         </div>
       </header>
 
-      {/* Main content area */}
       <main className="px-4 pb-10 pt-20">
         <Routes>
           <Route path="/" element={<Home />} />
@@ -37,82 +36,92 @@ function App() {
   );
 }
 
-/* ---------- Game Tiles ---------- */
 function Home() {
   return (
-    <div className="flex justify-center flex-wrap gap-6">
-      <GameCard
-        icon={
-          <img
-            src="/NYTWordleRecoloredLogo.png"
-            alt="Wordle Logo"
-            className="h-20 w-20 object-contain"
+    <div className="flex flex-col items-center gap-6">
+      {/* Wider progress bar */}
+      <div className="w-96 text-center">
+        <div className="mb-1 text-base font-medium dark:text-white">
+          Finish Games for Secret Message!
+        </div>
+        <div className="w-full h-3 bg-gray-200 rounded-full dark:bg-gray-700">
+          <div
+            className="h-3 bg-yellow-400 rounded-full dark:bg-blue-500"
+            style={{ width: "45%" }}
           />
-        }
-        title="Wordle"
-        description=""
-        color="bg-gray-200"
-        to="/wordle"
-      >
-        <button
-          type="button"
-          className="w-48 h-12 bg-white border border-gray-200 rounded-full shadow-sm text-base font-medium text-gray-800 hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-gray-300 transition flex items-center justify-center"
+        </div>
+      </div>
+
+      {/* Game Cards */}
+      <div className="flex justify-center flex-wrap gap-6">
+        <GameCard
+          icon={
+            <img
+              src="/NYTWordleRecoloredLogo.png"
+              alt="Wordle Logo"
+              className="h-20 w-20 object-contain"
+            />
+          }
+          title="Wordle"
+          color="bg-gray-200"
+          to="/wordle"
         >
-          Play
-        </button>
-      </GameCard>
-      <GameCard
-        icon={
-          <img
-            src="/NYTStrandsLogo.png"
-            alt="Strands Logo"
-            className="h-20 w-20 object-contain"
-          />
-        }
-        title="Strands"
-        description=""
-        color="bg-teal-200"
-        to="/strands"
-      >
-        <button
-          type="button"
-          className="w-48 h-12 bg-white border border-gray-200 rounded-full shadow-sm text-base font-medium text-gray-800 hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-gray-300 transition flex items-center justify-center"
+          <button
+            type="button"
+            className="w-48 h-12 bg-white border border-gray-200 rounded-full shadow-sm text-base font-medium text-gray-800 hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-gray-300 transition flex items-center justify-center"
+          >
+            Play
+          </button>
+        </GameCard>
+        <GameCard
+          icon={
+            <img
+              src="/NYTStrandsLogo.png"
+              alt="Strands Logo"
+              className="h-20 w-20 object-contain"
+            />
+          }
+          title="Strands"
+          color="bg-teal-200"
+          to="/strands"
         >
-          Play
-        </button>
-      </GameCard>
-      <GameCard
-        icon={
-          <img
-            src="/NYTMiniLogo.png"
-            alt="Mini Crossword Logo"
-            className="h-20 w-20 object-contain"
-          />
-        }
-        title="The Mini"
-        description=""
-        color="bg-yellow-200"
-        to="/mini"
-      >
-        <button
-          type="button"
-          className="w-48 h-12 bg-white border border-gray-200 rounded-full shadow-sm text-base font-medium text-gray-800 hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-gray-300 transition flex items-center justify-center"
+          <button
+            type="button"
+            className="w-48 h-12 bg-white border border-gray-200 rounded-full shadow-sm text-base font-medium text-gray-800 hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-gray-300 transition flex items-center justify-center"
+          >
+            Play
+          </button>
+        </GameCard>
+        <GameCard
+          icon={
+            <img
+              src="/NYTMiniLogo.png"
+              alt="Mini Crossword Logo"
+              className="h-20 w-20 object-contain"
+            />
+          }
+          title="The Mini"
+          color="bg-yellow-200"
+          to="/mini"
         >
-          Play
-        </button>
-      </GameCard>
+          <button
+            type="button"
+            className="w-48 h-12 bg-white border border-gray-200 rounded-full shadow-sm text-base font-medium text-gray-800 hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-gray-300 transition flex items-center justify-center"
+          >
+            Play
+          </button>
+        </GameCard>
+      </div>
     </div>
   );
 }
 
-/* ---------- Cards for Games ---------- */
-function GameCard({ title, description, color, to, icon, children }) {
+function GameCard({ title, color, to, icon, children }) {
   return (
     <Link
       to={to}
       className="w-[368px] h-[336px] rounded-2xl bg-white overflow-hidden border border-gray-200 shadow-sm hover:shadow-md transition flex flex-col"
     >
-      {/* header section */}
       <div
         className={`
           flex flex-col items-center justify-center
@@ -125,21 +134,11 @@ function GameCard({ title, description, color, to, icon, children }) {
         <span className="text-5xl">{icon}</span>
         <h2 className="text-3xl font-semibold">{title}</h2>
       </div>
-
-      {/* body section */}
       <div className="px-6 flex flex-col justify-center items-center text-center h-[40%]">
-        {description && (
-          <p className="text-gray-700 text-sm mb-2">{description}</p>
-        )}
         <div className="w-full flex justify-center">{children}</div>
       </div>
     </Link>
   );
 }
-
-/* ---------- Links to Games ---------- */
-import Wordle from "./Wordle.jsx";
-import Strands from "./Strands.jsx";
-import Mini from "./Mini.jsx";
 
 export default App;
