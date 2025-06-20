@@ -7,7 +7,7 @@
 
 import { useState, useMemo } from "react";
 
-/* ---------- GRID CONSTANTS ---------- */
+/* ---------- GRID SETUP ---------- */
 const SIZE = 5; // 5 rows × 5 columns
 const CELL = 72; // pixel size of each square
 
@@ -18,8 +18,8 @@ const kbRows = [
   ["Z", "X", "C", "V", "B", "N", "M", "Backspace", "Enter"],
 ];
 
-/* ---------- BOARD DATA ---------- */
-const blackBoxes = new Set(["0-3", "0-4", "1-4", "4-0"]); // black squares
+// Placing locations for blackboxes
+const blackBoxes = new Set(["0-3", "0-4", "1-4", "4-0"]);
 
 // Hardcoded board
 const solution = [
@@ -30,22 +30,23 @@ const solution = [
   ["", "S", "L", "A", "Y"],
 ];
 
-/* ------------------------------------------------------------------------ */
 export default function Mini() {
-  /* ---------- STATE ---------- */
+  // board: 2D array of user input letters
   const [board, setBoard] = useState(
     Array.from({ length: SIZE }, () => Array(SIZE).fill(""))
   );
+  // status: null = unchecked, true = correct, false = incorrect
   const [status, setStatus] = useState(
     Array.from({ length: SIZE }, () => Array(SIZE).fill(null))
-  ); // null|true|false
-  const [selected, setSelected] = useState(null); // [row,col]
+  );
+  const [selected, setSelected] = useState(null); // [r, c]
+  const [direction, setDirection] = useState("across"); // or "down"
 
-  /* ---------- AUTO-NUMBERING ---------- */
+  // Auto-number clue cells
   const clueNumbers = useMemo(() => {
     let across = 1;
     let down = 1;
-    const map = {}; // { "r-c": num }
+    const map = {};
 
     for (let r = 0; r < SIZE; r++) {
       for (let c = 0; c < SIZE; c++) {
@@ -56,8 +57,8 @@ export default function Mini() {
         const startsDown = r === 0 || blackBoxes.has(`${r - 1}-${c}`);
 
         if (startsAcross) {
-          map[key] = across++; // give the Across number
-          if (startsDown) down++; // <-- keep Down counter in sync
+          map[key] = across++;
+          if (startsDown) down++;
         } else if (startsDown) {
           map[key] = down++;
         }
@@ -66,11 +67,44 @@ export default function Mini() {
     return map;
   }, []);
 
-  /* ---------- HANDLERS ---------- */
+  // Word highlight logic (dynamic, depends on direction)
+  const currentWordCells = useMemo(() => {
+    if (!selected) return new Set();
+    const [r, c] = selected;
+    const cells = new Set();
+
+    if (direction === "across") {
+      let start = c;
+      while (start > 0 && !blackBoxes.has(`${r}-${start - 1}`)) start--;
+      let end = c;
+      while (end < SIZE - 1 && !blackBoxes.has(`${r}-${end + 1}`)) end++;
+      for (let i = start; i <= end; i++) cells.add(`${r}-${i}`);
+    } else {
+      let start = r;
+      while (start > 0 && !blackBoxes.has(`${start - 1}-${c}`)) start--;
+      let end = r;
+      while (end < SIZE - 1 && !blackBoxes.has(`${end + 1}-${c}`)) end++;
+      for (let i = start; i <= end; i++) cells.add(`${i}-${c}`);
+    }
+
+    return cells;
+  }, [selected, direction]);
+
+  // Handles selecting a cell and toggling direction on double-tap
   const handleCellClick = (r, c) => {
-    if (!blackBoxes.has(`${r}-${c}`)) setSelected([r, c]);
+    const key = `${r}-${c}`;
+    if (blackBoxes.has(key)) return;
+
+    if (selected?.[0] === r && selected?.[1] === c) {
+      // toggle direction if same cell is tapped again
+      setDirection((prev) => (prev === "across" ? "down" : "across"));
+    } else {
+      // move selection to new cell but keep direction the same
+      setSelected([r, c]);
+    }
   };
 
+  // Updates the letter in the grid at [r][c]
   const updateCell = (r, c, ch) => {
     setBoard((prev) =>
       prev.map((row, ri) => row.map((v, ci) => (ri === r && ci === c ? ch : v)))
@@ -82,6 +116,7 @@ export default function Mini() {
     );
   };
 
+  // Handles typing from the keyboard or virtual keys
   const handleKey = (key) => {
     if (!selected) return;
     const [r, c] = selected;
@@ -95,6 +130,7 @@ export default function Mini() {
     if (/^[A-Z]$/.test(ch)) updateCell(r, c, ch);
   };
 
+  // Checks user input against solution grid
   const checkAnswers = () => {
     setStatus((prev) =>
       prev.map((row, r) =>
@@ -107,7 +143,6 @@ export default function Mini() {
     );
   };
 
-  /* ---------- RENDER ---------- */
   return (
     <div
       className="p-4 flex flex-col items-center gap-6"
@@ -120,16 +155,15 @@ export default function Mini() {
       <div
         className="grid"
         style={{
-          gridTemplateColumns: `repeat(${SIZE},${CELL}px)`,
-          gridTemplateRows: `repeat(${SIZE},${CELL}px)`,
+          gridTemplateColumns: `repeat(${SIZE}, ${CELL}px)`,
+          gridTemplateRows: `repeat(${SIZE}, ${CELL}px)`,
         }}
       >
         {board.flatMap((row, r) =>
           row.map((letter, c) => {
             const key = `${r}-${c}`;
 
-            /* ----- Black square ----- */
-            if (blackBoxes.has(key))
+            if (blackBoxes.has(key)) {
               return (
                 <div
                   key={key}
@@ -137,18 +171,22 @@ export default function Mini() {
                   style={{ width: CELL, height: CELL }}
                 />
               );
+            }
 
-            /* ----- Typable square ----- */
             const isSel = selected?.[0] === r && selected?.[1] === c;
+            const inWord = currentWordCells.has(key);
             const flag = status[r][c];
             const text = flag === true ? "text-blue-600" : "text-black";
             const ring = isSel ? "outline outline-2 outline-blue-400" : "";
+            let bg = "bg-white";
+            if (isSel) bg = "bg-yellow-200";
+            else if (inWord) bg = "bg-blue-100";
 
             return (
               <div
                 key={key}
                 onClick={() => handleCellClick(r, c)}
-                className={`relative flex items-center justify-center border border-black bg-white text-2xl font-semibold select-none cursor-pointer ${ring} ${text}`}
+                className={`relative flex items-center justify-center border border-black ${bg} ${ring} ${text} text-2xl font-semibold select-none cursor-pointer`}
                 style={{ width: CELL, height: CELL }}
               >
                 {/* clue number */}
@@ -157,14 +195,12 @@ export default function Mini() {
                     {clueNumbers[key]}
                   </span>
                 )}
-
                 {/* red slash if wrong */}
                 {flag === false && (
                   <span className="pointer-events-none absolute inset-0 flex items-center justify-center">
                     <span className="w-full h-[2px] bg-red-500 rotate-[-45deg]" />
                   </span>
                 )}
-
                 {letter}
               </div>
             );
