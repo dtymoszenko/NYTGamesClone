@@ -1,6 +1,6 @@
 // Mini.jsx
 // ---------------------------------------------------------------------------
-// 5×5 crossword grid with clue numbers and letter input
+// 5×5 crossword grid with clue numbers, letter input, and styled keyboard
 // ---------------------------------------------------------------------------
 
 import { useState } from "react";
@@ -8,6 +8,13 @@ import { useState } from "react";
 /* --------------------------- GRID CONSTANTS --------------------------- */
 const SIZE = 5; // Grid is 5 rows × 5 columns
 const CELL = 72; // Size of each cell in pixels
+
+// On-screen keyboard rows (standard QWERTY)
+const kbRows = [
+  ["Q", "W", "E", "R", "T", "Y", "U", "I", "O", "P"],
+  ["A", "S", "D", "F", "G", "H", "J", "K", "L"],
+  ["Z", "X", "C", "V", "B", "N", "M", "Backspace", "Enter"],
+];
 
 export default function Mini() {
   // Stores the letters typed into each cell
@@ -28,18 +35,31 @@ export default function Mini() {
   };
 
   // Handles typing letters into the selected cell
-  // Used Stack, ChatGPT, and Reddit to understand this function/logic
-  function handleKeyDown(e) {
+  function handleKey(key) {
     if (!selected) return;
 
-    const key = e.key.toUpperCase();
-    if (key.length === 1 && key >= "A" && key <= "Z") {
-      const [r, c] = selected;
+    const [r, c] = selected;
+
+    if (key === "Backspace") {
       const updated = board.map((row, ri) =>
-        row.map((val, ci) => (ri === r && ci === c ? key : val))
+        row.map((val, ci) => (ri === r && ci === c ? "" : val))
+      );
+      setBoard(updated);
+      return;
+    }
+
+    const letter = key.toUpperCase();
+    if (letter.length === 1 && letter >= "A" && letter <= "Z") {
+      const updated = board.map((row, ri) =>
+        row.map((val, ci) => (ri === r && ci === c ? letter : val))
       );
       setBoard(updated);
     }
+  }
+
+  // Handles physical keyboard typing
+  function handleKeyDown(e) {
+    handleKey(e.key);
   }
 
   // Sets the selected cell when clicked
@@ -49,7 +69,7 @@ export default function Mini() {
 
   return (
     <div
-      className="p-4 flex flex-col items-center gap-4"
+      className="p-4 flex flex-col items-center gap-6"
       tabIndex={0}
       onKeyDown={handleKeyDown}
     >
@@ -91,6 +111,27 @@ export default function Mini() {
             );
           })
         )}
+      </div>
+
+      {/* On-screen keyboard */}
+      <div className="flex flex-col items-center gap-2 mt-6 px-2 w-full max-w-xl">
+        {kbRows.map((row, rowIndex) => (
+          <div key={rowIndex} className="flex justify-center gap-1 w-full">
+            {row.map((key) => (
+              <button
+                key={key}
+                onClick={() => handleKey(key)}
+                className={`flex-1 bg-white sm:flex-none sm:w-10 md:w-12 lg:w-14 h-12 rounded-lg shadow text-sm font-medium border border-gray-300 hover:brightness-105 transition ${
+                  key === "Enter" || key === "Backspace"
+                    ? "sm:w-20 md:w-24"
+                    : ""
+                }`}
+              >
+                {key === "Backspace" ? "⌫" : key}
+              </button>
+            ))}
+          </div>
+        ))}
       </div>
     </div>
   );
