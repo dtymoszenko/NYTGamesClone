@@ -4,7 +4,7 @@ export default function Wordle() {
   const numRows = 6; // Players get 6 guesses
   const numCols = 5; // Each guess is a 5-letter word
 
-  const targetWord = "PLANT"; // This is the word user is guessing, currently HARDCODED obviously
+  const targetWord = "WIFEY"; // This is the word user is guessing, currently HARDCODED obviously
 
   // Board is a 2D array: 6 rows of 5 blank tiles
   const [board, setBoard] = useState(
@@ -45,8 +45,11 @@ export default function Wordle() {
   // text that will be copied to clipboard
   const [shareText, setShareText] = useState("");
 
+  // track loss state to customize modal
+  const [didLose, setDidLose] = useState(false);
+
   // build the grid string
-  function buildShareString() {
+  function buildShareString(attemptLabel = currentRow + 1) {
     let grid = "";
     for (let r = 0; r <= currentRow; r++) {
       for (let c = 0; c < numCols; c++) {
@@ -55,7 +58,7 @@ export default function Wordle() {
       }
       if (r !== currentRow) grid += "\n";
     }
-    return `NinaYT Wordle ${currentRow + 1}/${numRows}\n${grid}`;
+    return `NinaYT Wordle ${attemptLabel}/${numRows}\n${grid}`;
   }
 
   // Keyboard input logic
@@ -150,6 +153,7 @@ export default function Wordle() {
                     const share = buildShareString();
                     setShareText(share);
                     setShowModal(true);
+                    setDidLose(false); // win
                     try {
                       navigator.clipboard.writeText(share);
                     } catch (_) {}
@@ -166,7 +170,14 @@ export default function Wordle() {
                     return;
                   }
                   if (currentRow + 1 === numRows) {
-                    alert(`The word was ${targetWord}. Better luck next time!`);
+                    // Build share string and open modal on loss
+                    const share = buildShareString("X");
+                    setShareText(share);
+                    setDidLose(true); // loss
+                    setShowModal(true);
+                    try {
+                      navigator.clipboard.writeText(share);
+                    } catch (_) {}
                     setIsGameOver(true);
                     setIsRevealing(false); // re-enable typing for next guess
                     return;
@@ -301,7 +312,11 @@ export default function Wordle() {
       {showModal && (
         <div className="fixed inset-0 z-50 grid place-items-center bg-black/60">
           <div className="bg-white rounded-xl p-6 w-80 text-center space-y-4">
-            <h2 className="text-2xl font-bold">🎉 You guessed it!</h2>
+            <h2 className="text-2xl font-bold">
+              {didLose
+                ? `😔 You lost! The word was ${targetWord}`
+                : "🎉 You guessed it!"}
+            </h2>
 
             {/* share grid */}
             <pre className="font-mono whitespace-pre leading-5">
