@@ -5,16 +5,16 @@ function App() {
   return (
     <div className="min-h-screen bg-[#fffbea] text-gray-800 flex flex-col gap-8">
 
-      <header className="bg-[#fff176] shadow-md mb-8">
-        <div className="w-full px-4 pt-6 pb-16 flex flex-col items-center text-center rounded-b-2xl">
+      <header className="w-full bg-[#fff176] shadow-md mb-8 rounded-b-2xl">
+        <div className="w-full px-4 pt-6 pb-16 flex flex-col items-center text-center">
           {/* Clickable logo returns to Home */}
-          <Link to="/" className="w-full flex justify-center">
+          <Link to="/" className="flex items-center justify-center">
             <h1 className="text-4xl font-extrabold mb-1">
               NinaYT
             </h1>
           </Link>
           <p className="text-lg text-gray-700">
-            Custom daily games, just for you <span role="img" aria-label="heart">💛</span>
+            <span role="img" aria-label="heart">💛</span>Our Daily Ritual Personalized<span role="img" aria-label="heart">💛</span>
           </p>
         </div>
       </header>
@@ -39,56 +39,90 @@ function Home() {
       <GameCard
         icon="🟩"
         title="Wordle"
-        description="Guess the 5-letter word in 6 tries!"
+        description=""
         color="bg-gray-200"
         to="/wordle"
-      />
+      >
+        <button
+          type="button"
+          className="w-48 h-12 bg-white border border-gray-200 rounded-full shadow-sm text-base font-medium text-gray-800 hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-gray-300 transition flex items-center justify-center"
+        >
+          Play
+        </button>
+      </GameCard>
       <GameCard
         icon="🔷"
         title="Strands"
-        description="Solve the Hidden Theme!"
+        description=""
         color="bg-teal-200"
         to="/strands"
-      />
+      >
+        <button
+          type="button"
+          className="w-48 h-12 bg-white border border-gray-200 rounded-full shadow-sm text-base font-medium text-gray-800 hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-gray-300 transition flex items-center justify-center"
+        >
+          Play
+        </button>
+      </GameCard>
       <GameCard
         icon="✏️"
-        title="Crossword"
-        description="Solve the mini puzzle of the day!"
+        title="The Mini"
+        description=""
         color="bg-yellow-200"
         to="/crossword"
-      />
+      >
+        <button
+          type="button"
+          className="w-48 h-12 bg-white border border-gray-200 rounded-full shadow-sm text-base font-medium text-gray-800 hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-gray-300 transition flex items-center justify-center"
+        >
+          Play
+        </button>
+      </GameCard>
     </div>
   );
 }
 
 /* ---------- Cards for Games ---------- */
-function GameCard({ title, description, color, to, icon }) {
+function GameCard({ title, description, color, to, icon, children }) {
   return (
     <Link
       to={to}
-      className="w-[368px] h-[336px] rounded-lg overflow-hidden border border-gray-200 shadow-sm hover:shadow-md transition flex flex-col"
+      className="w-[368px] h-[336px] rounded-2xl bg-white overflow-hidden border border-gray-200 shadow-sm hover:shadow-md transition flex flex-col"
     >
       {/* header section */}
-      <div className={`flex flex-col items-center justify-center ${color} py-8`}>
+      <div
+        className={`
+          flex flex-col items-center justify-center
+          ${color}
+          h-[60%]
+          rounded-t-2xl
+          gap-8
+        `}
+      >
         <span className="text-5xl">{icon}</span>
-        <h2 className="mt-2 text-2xl font-bold">{title}</h2>
+        <h2 className="text-2xl font-bold">{title}</h2>
       </div>
 
       {/* body section */}
-      <div className="bg-white px-6 pt-4 pb-6 flex flex-col justify-between flex-grow text-center">
-        <p className="text-gray-700 text-sm">{description}</p>
-        <button className="mt-4 px-6 py-2 rounded-full bg-white border border-gray-300 font-medium hover:bg-gray-100">
-          Play
-        </button>
+      <div className="px-6 flex flex-col justify-center items-center text-center h-[40%]">
+        {description && (
+          <p className="text-gray-700 text-sm mb-2">
+            {description}
+          </p>
+        )}
+        <div className="w-full flex justify-center">
+          {children}
+        </div>
       </div>
     </Link>
   );
 }
 
-
 /* ---------- Links to Games ---------- */
 import Wordle from "./Wordle.jsx";
 import Strands from './Strands.jsx';
-function Crossword(){ return <p className="text-center mt-20 text-xl">✏️ Crossword game will go here!</p>; }
+function Crossword(){
+  return <p className="text-center mt-20 text-xl">✏️ The Mini game will go here!</p>;
+}
 
 export default App;
