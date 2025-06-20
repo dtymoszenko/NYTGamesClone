@@ -2,7 +2,8 @@
 // ---------------------------------------------------------------------------
 // 5×5 crossword grid with black boxes, automatic clue numbers, answer checks,
 // blue-text locks for correct letters, red slashes for wrong letters, a timer,
-// a victory modal (with copy-to-clipboard), and a Wordle-style keyboard.
+// victory modal, reveal / check tools (dropdowns lock revealed cells), copy,
+// and a Wordle-style on-screen keyboard.
 // ---------------------------------------------------------------------------
 
 import { useState, useMemo, useEffect, useRef } from "react";
@@ -21,7 +22,7 @@ const kbRows = [
 /* ---------- BOARD DATA ---------- */
 const blackBoxes = new Set(["0-3", "0-4", "1-4", "4-0"]); // black squares
 
-// empty strings in solution correspond to black squares above
+// Hard-coded solution grid (empty strings correspond to black squares)
 const solution = [
   ["S", "P", "A", "", ""],
   ["H", "A", "N", "D", ""],
@@ -30,7 +31,6 @@ const solution = [
   ["", "S", "L", "A", "Y"],
 ];
 
-/* ------------------------------------------------------------------------ */
 export default function Mini() {
   /* ---------- STATE ---------- */
   const [board, setBoard] = useState(
@@ -38,28 +38,31 @@ export default function Mini() {
   );
   const [status, setStatus] = useState(
     Array.from({ length: SIZE }, () => Array(SIZE).fill(null))
-  ); // null|true|false
+  ); // null | true | false
   const [selected, setSelected] = useState(null); // active [row,col]
-  const [direction, setDirection] = useState("across"); // "across" | "down"
+  const [direction, setDirection] = useState("across"); // typing direction
+  const [elapsed, setElapsed] = useState(0); // seconds since start
+  const [showModal, setShowModal] = useState(false); // victory modal
+  const [copySuccess, setCopySuccess] = useState(false); // copied hint
+  //refs for dropdowns
+  const checkMenuRef = useRef(null);
+  const revealMenuRef = useRef(null);
 
-  const [elapsed, setElapsed] = useState(0); // timer (sec)
-  const [showModal, setShowModal] = useState(false); // modal flag
-  const [copied, setCopied] = useState(false); // copy-feedback
+  // dropdown menus for the toolbar
+  const [showRevealMenu, setShowRevealMenu] = useState(false);
+  const [showCheckMenu, setShowCheckMenu] = useState(false);
 
-  const timerRef = useRef(null); // keep interval id so we can clear it
-  const containerRef = useRef(null); // auto-focus for key input
+  const containerRef = useRef(null); // autofocus wrapper
 
-  /* ---------- START / STOP TIMER ---------- */
+  /* ---------- EFFECT: start timer ---------- */
   useEffect(() => {
-    timerRef.current = setInterval(() => setElapsed((s) => s + 1), 1000);
-    return () => clearInterval(timerRef.current); // cleanup
+    const id = setInterval(() => setElapsed((s) => s + 1), 1000);
+    return () => clearInterval(id);
   }, []);
 
-  /* ---------- AUTO-FOCUS & highlight first cell ---------- */
+  /* ---------- EFFECT: autofocus & 1-Across cursor ---------- */
   useEffect(() => {
-    containerRef.current?.focus(); // immediate typing
-
-    // highlight first non-black square (1-Across)
+    containerRef.current?.focus();
     for (let r = 0; r < SIZE; r++) {
       for (let c = 0; c < SIZE; c++) {
         if (!blackBoxes.has(`${r}-${c}`)) {
@@ -70,12 +73,28 @@ export default function Mini() {
     }
   }, []);
 
-  /* ---------- AUTO-NUMBER CLUES ---------- */
+  // Listen for clicks not in dropdown (to close it)
+  useEffect(() => {
+    const handleClickOutside = (e) => {
+      if (
+        checkMenuRef.current &&
+        !checkMenuRef.current.contains(e.target) &&
+        revealMenuRef.current &&
+        !revealMenuRef.current.contains(e.target)
+      ) {
+        setShowCheckMenu(false);
+        setShowRevealMenu(false);
+      }
+    };
+    document.addEventListener("mousedown", handleClickOutside);
+    return () => document.removeEventListener("mousedown", handleClickOutside);
+  }, []);
+
+  /* ---------- AUTO-NUMBERING ---------- */
   const clueNumbers = useMemo(() => {
     let across = 1,
       down = 1;
-    const map = {}; // { "r-c": number }
-
+    const map = {};
     for (let r = 0; r < SIZE; r++) {
       for (let c = 0; c < SIZE; c++) {
         const key = `${r}-${c}`;
@@ -86,7 +105,7 @@ export default function Mini() {
 
         if (startsAcross) {
           map[key] = across++;
-          if (startsDown) down++;
+          if (startsDown) down++; // if it’s a start of both, advance both counters
         } else if (startsDown) {
           map[key] = down++;
         }
@@ -95,7 +114,7 @@ export default function Mini() {
     return map;
   }, []);
 
-  /* ---------- WORD HIGHLIGHT (across / down) ---------- */
+  /* ---------- CURRENT WORD (for highlight) ---------- */
   const currentWordCells = useMemo(() => {
     if (!selected) return new Set();
     const [r, c] = selected;
@@ -117,7 +136,7 @@ export default function Mini() {
     return cells;
   }, [selected, direction]);
 
-  /* ---------- CURSOR MOVEMENT HELPERS ---------- */
+  /* ---------- CURSOR HELPERS ---------- */
   const nextCell = (r, c) => {
     if (direction === "across") {
       for (let nc = c + 1; nc < SIZE; nc++) {
@@ -132,7 +151,6 @@ export default function Mini() {
     }
     return [r, c];
   };
-
   const prevCell = (r, c) => {
     if (direction === "across") {
       for (let nc = c - 1; nc >= 0; nc--) {
@@ -148,21 +166,12 @@ export default function Mini() {
     return [r, c];
   };
 
-  /* ---------- EVENT HANDLERS ---------- */
-  const handleCellClick = (r, c) => {
-    if (blackBoxes.has(`${r}-${c}`)) return;
-
-    if (selected?.[0] === r && selected?.[1] === c) {
-      setDirection((d) => (d === "across" ? "down" : "across"));
-    } else {
-      setSelected([r, c]);
-    }
-  };
-
+  /* ---------- CORE MUTATIONS ---------- */
   const updateCell = (r, c, ch) => {
     setBoard((prev) =>
       prev.map((row, ri) => row.map((v, ci) => (ri === r && ci === c ? ch : v)))
     );
+    // any manual edit resets that square’s status back to null
     setStatus((prev) =>
       prev.map((row, ri) =>
         row.map((v, ci) => (ri === r && ci === c ? null : v))
@@ -170,6 +179,97 @@ export default function Mini() {
     );
   };
 
+  /* ---------- REVEAL UTILITIES (lock & blue) ---------- */
+  const revealSquare = () => {
+    if (!selected) return;
+    const [r, c] = selected;
+    if (blackBoxes.has(`${r}-${c}`)) return;
+    updateCell(r, c, solution[r][c]);
+    setStatus((prev) =>
+      prev.map((row, ri) =>
+        row.map((v, ci) => (ri === r && ci === c ? true : v))
+      )
+    );
+  };
+
+  const revealWord = () => {
+    const coords = Array.from(currentWordCells).map((k) =>
+      k.split("-").map(Number)
+    );
+    coords.forEach(([r, c]) => updateCell(r, c, solution[r][c]));
+    setStatus((prev) =>
+      prev.map((row, ri) =>
+        row.map((v, ci) =>
+          coords.some(([r2, c2]) => r2 === ri && c2 === ci) ? true : v
+        )
+      )
+    );
+  };
+
+  const revealPuzzle = () => {
+    setBoard(solution.map((r) => [...r]));
+    setStatus((prev) =>
+      prev.map((row, r) =>
+        row.map((_, c) => (blackBoxes.has(`${r}-${c}`) ? null : true))
+      )
+    );
+  };
+
+  /* ---------- CHECK UTILITIES ---------- */
+  const checkSquare = () => {
+    if (!selected) return;
+    const [r, c] = selected;
+    if (blackBoxes.has(`${r}-${c}`)) return;
+    setStatus((prev) =>
+      prev.map((row, ri) =>
+        row.map((v, ci) =>
+          ri === r && ci === c ? board[r][c] === solution[r][c] : v
+        )
+      )
+    );
+  };
+
+  const checkWord = () => {
+    const updates = Array.from({ length: SIZE }, () => Array(SIZE).fill(null));
+    currentWordCells.forEach((key) => {
+      const [r, c] = key.split("-").map(Number);
+      updates[r][c] = board[r][c] === solution[r][c];
+    });
+    setStatus((prev) =>
+      prev.map((row, r) =>
+        row.map((v, c) => (updates[r][c] !== null ? updates[r][c] : v))
+      )
+    );
+  };
+
+  const checkPuzzle = () => {
+    setStatus((prev) =>
+      prev.map((row, r) =>
+        row.map((_, c) =>
+          blackBoxes.has(`${r}-${c}`) ? null : board[r][c] === solution[r][c]
+        )
+      )
+    );
+    // victory?
+    if (
+      board.every((row, r) =>
+        row.every((cell, c) =>
+          blackBoxes.has(`${r}-${c}`) ? true : cell === solution[r][c]
+        )
+      )
+    ) {
+      setShowModal(true);
+    }
+  };
+
+  /* ---------- VICTORY & COPY ---------- */
+  const copyResult = () => {
+    navigator.clipboard.writeText(`I finished the NinaYT Mini in ${elapsed}s!`);
+    setCopySuccess(true);
+    setTimeout(() => setCopySuccess(false), 1500);
+  };
+
+  /* ---------- KEYBOARD HANDLER ---------- */
   const handleKey = (key) => {
     if (!selected) return;
     let [r, c] = selected;
@@ -181,7 +281,6 @@ export default function Mini() {
       setSelected([pr, pc]);
       return;
     }
-
     const ch = key.toUpperCase();
     if (/^[A-Z]$/.test(ch)) {
       updateCell(r, c, ch);
@@ -190,64 +289,134 @@ export default function Mini() {
     }
   };
 
-  /* ---------- CHECK ANSWERS & TRIGGER WIN ---------- */
-  const checkAnswers = () => {
-    const allCorrectRow = (row, r) =>
-      row.every((_, c) =>
-        blackBoxes.has(`${r}-${c}`) ? true : board[r][c] === solution[r][c]
-      );
-
-    setStatus((prev) =>
-      prev.map((row, r) =>
-        row.map((_, c) => {
-          const k = `${r}-${c}`;
-          if (blackBoxes.has(k)) return null;
-          return board[r][c] && board[r][c] === solution[r][c];
-        })
-      )
-    );
-
-    if (board.every(allCorrectRow)) {
-      clearInterval(timerRef.current); // stop timer
-      setShowModal(true); // show win modal
+  /* ---------- CELL CLICK ---------- */
+  const handleCellClick = (r, c) => {
+    if (blackBoxes.has(`${r}-${c}`)) return;
+    if (selected?.[0] === r && selected?.[1] === c) {
+      setDirection((d) => (d === "across" ? "down" : "across"));
+    } else {
+      setSelected([r, c]);
     }
-  };
-
-  /* ---------- COPY STRING TO CLIPBOARD ---------- */
-  const handleCopy = () => {
-    const secs = elapsed % 60;
-    const mins = Math.floor(elapsed / 60);
-    const text = `I finished the NinaYT Mini in ${mins}m ${secs}s.`;
-
-    navigator.clipboard.writeText(text).then(() => {
-      setCopied(true);
-      setTimeout(() => setCopied(false), 1500); // reset label
-    });
   };
 
   /* ---------- RENDER ---------- */
   return (
     <div
-      ref={containerRef} /* auto-focus for typing */
-      className="p-4 flex flex-col items-center gap-6"
+      ref={containerRef}
+      className="p-4 flex flex-col items-center gap-4"
       tabIndex={0}
       onKeyDown={(e) => handleKey(e.key)}
     >
-      <h1 className="text-2xl font-bold">Mini Crossword</h1>
+      {/* TIMER & TITLE */}
+      <h1 className="text-xl font-bold">
+        NinaYT Mini Crossword – {Math.floor(elapsed / 60)}m {elapsed % 60}s
+      </h1>
+
+      {/* TOOLBAR (dropdown style) */}
+      <div className="flex gap-4">
+        {/* Check menu */}
+        {/* Check menu */}
+        <div className="relative" ref={checkMenuRef}>
+          <button
+            onClick={() => {
+              setShowCheckMenu((p) => !p);
+              setShowRevealMenu(false);
+            }}
+            className="bg-blue-500 text-white px-4 py-2 rounded-full shadow hover:brightness-105"
+          >
+            ✅ Check
+          </button>
+          {showCheckMenu && (
+            <div className="absolute z-10 bg-white border rounded shadow mt-2 w-36">
+              <button
+                onClick={() => {
+                  checkSquare();
+                  setShowCheckMenu(false);
+                }}
+                className="block w-full text-left px-4 py-2 hover:bg-gray-100"
+              >
+                Check Square
+              </button>
+              <button
+                onClick={() => {
+                  checkWord();
+                  setShowCheckMenu(false);
+                }}
+                className="block w-full text-left px-4 py-2 hover:bg-gray-100"
+              >
+                Check Word
+              </button>
+              <button
+                onClick={() => {
+                  checkPuzzle();
+                  setShowCheckMenu(false);
+                }}
+                className="block w-full text-left px-4 py-2 hover:bg-gray-100"
+              >
+                Check Puzzle
+              </button>
+            </div>
+          )}
+        </div>
+
+        {/* Reveal menu */}
+        <div className="relative" ref={revealMenuRef}>
+          <button
+            onClick={() => {
+              setShowRevealMenu((p) => !p);
+              setShowCheckMenu(false);
+            }}
+            className="bg-yellow-500 text-white px-4 py-2 rounded-full shadow hover:brightness-105"
+          >
+            💡 Reveal
+          </button>
+          {showRevealMenu && (
+            <div className="absolute z-10 bg-white border rounded shadow mt-2 w-36">
+              <button
+                onClick={() => {
+                  revealSquare();
+                  setShowRevealMenu(false);
+                }}
+                className="block w-full text-left px-4 py-2 hover:bg-gray-100"
+              >
+                Reveal Square
+              </button>
+              <button
+                onClick={() => {
+                  revealWord();
+                  setShowRevealMenu(false);
+                }}
+                className="block w-full text-left px-4 py-2 hover:bg-gray-100"
+              >
+                Reveal Word
+              </button>
+              <button
+                onClick={() => {
+                  revealPuzzle();
+                  setShowRevealMenu(false);
+                }}
+                className="block w-full text-left px-4 py-2 hover:bg-gray-100"
+              >
+                Reveal Puzzle
+              </button>
+            </div>
+          )}
+        </div>
+      </div>
 
       {/* GRID */}
       <div
         className="grid"
         style={{
-          gridTemplateColumns: `repeat(${SIZE}, ${CELL}px)`,
-          gridTemplateRows: `repeat(${SIZE}, ${CELL}px)`,
+          gridTemplateColumns: `repeat(${SIZE},${CELL}px)`,
+          gridTemplateRows: `repeat(${SIZE},${CELL}px)`,
         }}
       >
         {board.flatMap((row, r) =>
           row.map((letter, c) => {
             const key = `${r}-${c}`;
 
-            /* ----- Black square ----- */
+            /* black square */
             if (blackBoxes.has(key))
               return (
                 <div
@@ -257,10 +426,10 @@ export default function Mini() {
                 />
               );
 
-            /* ----- Typable square ----- */
+            /* typable square */
             const isSel = selected?.[0] === r && selected?.[1] === c;
             const inWord = currentWordCells.has(key);
-            const flag = status[r][c];
+            const flag = status[r][c]; // null | true | false
             const text = flag === true ? "text-blue-600" : "text-black";
             const ring = isSel ? "outline outline-2 outline-blue-400" : "";
             let bg = "bg-white";
@@ -295,7 +464,7 @@ export default function Mini() {
       </div>
 
       {/* KEYBOARD */}
-      <div className="flex flex-col items-center gap-2 mt-6 px-2 w-full max-w-xl">
+      <div className="flex flex-col items-center gap-2 mt-4 px-2 w-full max-w-xl">
         {kbRows.map((row, i) => (
           <div key={i} className="flex justify-center gap-1 w-full">
             {row.map((k) => (
@@ -313,19 +482,6 @@ export default function Mini() {
         ))}
       </div>
 
-      {/* CHECK BUTTON */}
-      <button
-        onClick={checkAnswers}
-        className="mt-4 bg-blue-500 text-white px-4 py-2 rounded shadow hover:brightness-110 transition"
-      >
-        Check Answers
-      </button>
-
-      {/* TIMER DISPLAY */}
-      <p className="text-gray-600 text-sm">
-        Time: {Math.floor(elapsed / 60)}m {elapsed % 60}s
-      </p>
-
       {/* VICTORY MODAL */}
       {showModal && (
         <div className="fixed inset-0 z-50 grid place-items-center bg-black/50">
@@ -333,17 +489,15 @@ export default function Mini() {
             <h2 className="text-2xl font-bold">🎉 Congratulations!</h2>
             <p>
               You solved the Mini in{" "}
-              <span className="font-semibold">
-                {Math.floor(elapsed / 60)}m {elapsed % 60}s
-              </span>
+              <span className="font-semibold">{elapsed}s</span>
             </p>
 
-            {/* COPY TO CLIPBOARD */}
+            {/* copy-to-clipboard */}
             <button
-              onClick={handleCopy}
-              className="w-full bg-green-500 text-white py-2 rounded-lg shadow hover:brightness-105 transition"
+              onClick={copyResult}
+              className="w-full bg-yellow-400 text-white py-2 rounded-lg shadow hover:brightness-105"
             >
-              {copied ? "Copied!" : "Copy time to clipboard"}
+              {copySuccess ? "Copied ✓" : "Copy result"}
             </button>
 
             <button
