@@ -1,7 +1,6 @@
 import { useState, useRef, useEffect } from "react";
 import confetti from "canvas-confetti";
 
-
 /* -------------------------------------------------------------------------- */
 /*                               PUZZLE DATA                                  */
 /* -------------------------------------------------------------------------- */
@@ -10,16 +9,14 @@ import confetti from "canvas-confetti";
 // Row 0 → top row, Row 7 → bottom row
 const initialGrid = [
   ["V", "I", "N", "G", "G", "O"],
-  ["O", "L", "S", "O", "G", "R"],
+  ["L", "O", "S", "O", "G", "R"],
   ["E", "I", "U", "E", "U", "C"],
   ["T", "F", "P", "P", "G", "E"],
-  ["H", "U", "N", "A", "E", "L"],
-  ["G", "L", "T", "F", "U", "N"],
+  ["H", "U", "T", "A", "E", "L"],
+  ["G", "L", "N", "F", "U", "N"],
   ["U", "H", "E", "V", "N", "Y"],
   ["O", "T", "R", "E", "L", "C"],
 ];
-
-
 
 // Valid answers for personal puzzle.. I'm so excited to show this to her
 const wordList = [
@@ -33,9 +30,6 @@ const wordList = [
 ];
 
 const SPANGRAM = "CUPPIE";
-
-
-
 
 /* -------------------------------------------------------------------------- */
 /*                            MAIN COMPONENT                                  */
@@ -66,11 +60,10 @@ export default function Strands() {
   const [foundWords, setFoundWords] = useState([]);
 
   // Show the win screen modal once the strands puzzle is completed
-  const [showWin,   setShowWin]   = useState(false);
+  const [showWin, setShowWin] = useState(false);
 
   // State for if the string is copied or not (result to share)
-  const [copied, setCopied] = useState(false); 
-
+  const [copied, setCopied] = useState(false);
 
   // Reference to our <canvas> element so we can draw connecting lines
   const canvasRef = useRef(null);
@@ -111,71 +104,69 @@ export default function Strands() {
 
     // Helper to draw one complete path in a given colour
     const drawPath = (path, colour) => {
-  // Ignore paths with fewer than two tiles — nothing to draw
-  if (path.length < 2) return;
+      // Ignore paths with fewer than two tiles — nothing to draw
+      if (path.length < 2) return;
 
-  // Set stroke appearance (color, width, corner style, end caps)
-  ctx.strokeStyle = colour; // Color of the connecting line
-  ctx.lineWidth = 6;        // Line thickness
-  ctx.lineJoin = "round";   // Rounded corners between segments
-  ctx.lineCap = "round";    // Rounded line ends
-  ctx.beginPath();          // Start a new drawing path
+      // Set stroke appearance (color, width, corner style, end caps)
+      ctx.strokeStyle = colour; // Color of the connecting line
+      ctx.lineWidth = 6; // Line thickness
+      ctx.lineJoin = "round"; // Rounded corners between segments
+      ctx.lineCap = "round"; // Rounded line ends
+      ctx.beginPath(); // Start a new drawing path
 
-  // Loop through each pair of consecutive tiles in the path
-  for (let i = 0; i < path.length - 1; i++) {
-    // Convert "row-col" strings into numeric row and column values
-    const [r1, c1] = path[i].split("-").map(Number);
-    const [r2, c2] = path[i + 1].split("-").map(Number);
+      // Loop through each pair of consecutive tiles in the path
+      for (let i = 0; i < path.length - 1; i++) {
+        // Convert "row-col" strings into numeric row and column values
+        const [r1, c1] = path[i].split("-").map(Number);
+        const [r2, c2] = path[i + 1].split("-").map(Number);
 
-    // Determine the direction from the first tile to the next
-    const dRow = Math.sign(r2 - r1); // Vertical movement: -1, 0, or 1
-    const dCol = Math.sign(c2 - c1); // Horizontal movement: -1, 0, or 1
+        // Determine the direction from the first tile to the next
+        const dRow = Math.sign(r2 - r1); // Vertical movement: -1, 0, or 1
+        const dCol = Math.sign(c2 - c1); // Horizontal movement: -1, 0, or 1
 
-    if (dRow === 0 || dCol === 0) {
-      // For straight lines (horizontal or vertical):
-      // draw from the edge of the first tile to the edge of the second tile
-      const start = getEdge(r1, c1, dRow, dCol);
-      const end = getEdge(r2, c2, -dRow, -dCol);
-      ctx.moveTo(start.x, start.y);
-      ctx.lineTo(end.x, end.y);
-    } else {
-      // For diagonal lines:
-      // draw from one corner of the first tile to the opposite corner of the second tile
-      const offX = (dCol * tileSize) / 2;
-      const offY = (dRow * tileSize) / 2;
+        if (dRow === 0 || dCol === 0) {
+          // For straight lines (horizontal or vertical):
+          // draw from the edge of the first tile to the edge of the second tile
+          const start = getEdge(r1, c1, dRow, dCol);
+          const end = getEdge(r2, c2, -dRow, -dCol);
+          ctx.moveTo(start.x, start.y);
+          ctx.lineTo(end.x, end.y);
+        } else {
+          // For diagonal lines:
+          // draw from one corner of the first tile to the opposite corner of the second tile
+          const offX = (dCol * tileSize) / 2;
+          const offY = (dRow * tileSize) / 2;
 
-      const start = {
-        x: c1 * (tileSize + gap) + tileSize / 2 + offX,
-        y: r1 * (tileSize + gap) + tileSize / 2 + offY,
-      };
-      const end = {
-        x: c2 * (tileSize + gap) + tileSize / 2 - offX,
-        y: r2 * (tileSize + gap) + tileSize / 2 - offY,
-      };
+          const start = {
+            x: c1 * (tileSize + gap) + tileSize / 2 + offX,
+            y: r1 * (tileSize + gap) + tileSize / 2 + offY,
+          };
+          const end = {
+            x: c2 * (tileSize + gap) + tileSize / 2 - offX,
+            y: r2 * (tileSize + gap) + tileSize / 2 - offY,
+          };
 
-      ctx.moveTo(start.x, start.y);
-      ctx.lineTo(end.x, end.y);
-    }
-  }
+          ctx.moveTo(start.x, start.y);
+          ctx.lineTo(end.x, end.y);
+        }
+      }
 
-  // Render the entire line path to the canvas
-  ctx.stroke();
-};
-
+      // Render the entire line path to the canvas
+      ctx.stroke();
+    };
 
     // Draw words that are found in blue and make them stay
     paths.forEach((path) => {
-  const word = path
-    .map((coord) => {
-      const [r, c] = coord.split("-").map(Number);
-      return initialGrid[r][c];
-    })
-    .join("");
+      const word = path
+        .map((coord) => {
+          const [r, c] = coord.split("-").map(Number);
+          return initialGrid[r][c];
+        })
+        .join("");
 
-  const color = word === "CUPPIE" ? "#facc15" : "#3b82f6"; // yellow or tailwind blue500
-  drawPath(path, color);
-});
-
+      const color = word === "CUPPIE" ? "#facc15" : "#3b82f6"; // yellow or tailwind blue500
+      drawPath(path, color);
+    });
 
     // Draw the current in-progress drag in gray (no change from before)
     drawPath(selected, "#94a3b8"); // Tailwind slate-400
@@ -241,7 +232,6 @@ export default function Strands() {
 
       //Ensure that a word is included in the list and not already found
       if (wordList.includes(word) && !foundWords.includes(word)) {
-
         // Valid word: save it
         setFound([...found, ...selected]);
         setPaths((p) => [...p, selected]);
@@ -253,8 +243,8 @@ export default function Strands() {
         //mark tiles as yellow if spanogram
         if (getSelectedWord() === "CUPPIE") {
           setSpangramTiles(selected); // mark as should be yellow when completed (because == hardcoded spanogram)
-        } 
-        
+        }
+
         //Show the win modal if all words have been found
         if (newWords.length === wordList.length) {
           setShowWin(true);
@@ -304,14 +294,12 @@ export default function Strands() {
       const col = parseInt(target.dataset.col);
       handleEnter(row, col);
     }
-};
+  };
 
-// Handle finger release
-const handleTouchEnd = () => {
-  handleEnd();
-};
-
-
+  // Handle finger release
+  const handleTouchEnd = () => {
+    handleEnd();
+  };
 
   /* ---------------------------------------------------------------------- */
   /*                          Word Validation                               */
@@ -349,11 +337,11 @@ const handleTouchEnd = () => {
           spread: 90,
           origin: { y: 0.6 },
         });
-      } 
+      }
 
       if (getSelectedWord() === "CUPPIE") {
         setSpangramTiles(selected); // mark as should be yellow when completed (because == hardcoded spanogram)
-      } 
+      }
 
       setSelected([]);
       setMessage(`✅ Found "${word}"!`);
@@ -375,8 +363,6 @@ const handleTouchEnd = () => {
 
   // Text that is built which is what will be copied to clipboard (if button is clicked)
   const shareText = `NinaYT Strands - The Perfect Girl\n${dotString}\n`;
-
-
 
   return (
     <div
@@ -420,11 +406,11 @@ const handleTouchEnd = () => {
               //Used google/stack/chatGPT to help with logic of changing color based on spanogram
               const tileClass = isFound
                 ? spangramTiles.includes(key)
-                  ? "bg-yellow-300 border-yellow-500 text-white"   // spangram tiles
-                  : "bg-blue-300  border-blue-500  text-white"     // regular found word
+                  ? "bg-yellow-300 border-yellow-500 text-white" // spangram tiles
+                  : "bg-blue-300  border-blue-500  text-white" // regular found word
                 : isSel
-                  ? "bg-gray-200 border-gray-400"                  // actively selecting
-                  : "bg-white    border-gray-300 hover:bg-gray-100"; // normal tile
+                ? "bg-gray-200 border-gray-400" // actively selecting
+                : "bg-white    border-gray-300 hover:bg-gray-100"; // normal tile
 
               return (
                 <div
@@ -454,38 +440,37 @@ const handleTouchEnd = () => {
         <p className="text-center text-sm text-gray-700 mt-2">{message}</p>
       )}
 
-    {showWin && (
-      <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50">
-      <div className="bg-white p-6 rounded-lg text-center w-72 shadow-xl rounded-2xl">
-      <h2 className="text-3xl font-bold mb-2">Perfect!</h2>
-      <p className="font-semibold">Strands – The Perfect Girl</p>
+      {showWin && (
+        <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50">
+          <div className="bg-white p-6 rounded-lg text-center w-72 shadow-xl rounded-2xl">
+            <h2 className="text-3xl font-bold mb-2">Perfect!</h2>
+            <p className="font-semibold">Strands – The Perfect Girl</p>
 
-      {/* dots */}
-      <pre className="text-2xl mt-4 whitespace-pre">{dotString}</pre>
+            {/* dots */}
+            <pre className="text-2xl mt-4 whitespace-pre">{dotString}</pre>
 
-      {/* Buttons for copy or closing (similar to wordle) */}
-      <div className="mt-4 flex flex-col gap-2">
-        <button
-          onClick={async () => {
-            await navigator.clipboard.writeText(shareText);
-            setCopied(true);
-          }}
-          className="px-4 py-2 bg-green-500 text-white rounded hover:bg-green-600"
-        >
-          {copied ? "Copied ✔" : "Copy Results"}
-        </button>
+            {/* Buttons for copy or closing (similar to wordle) */}
+            <div className="mt-4 flex flex-col gap-2">
+              <button
+                onClick={async () => {
+                  await navigator.clipboard.writeText(shareText);
+                  setCopied(true);
+                }}
+                className="px-4 py-2 bg-green-500 text-white rounded hover:bg-green-600"
+              >
+                {copied ? "Copied ✔" : "Copy Results"}
+              </button>
 
-        <button
-          onClick={() => setShowWin(false)}
-          className="px-4 py-2 bg-blue-500 text-white rounded hover:bg-blue-600"
-        >
-          Close
-        </button>
-      </div>
-    </div>
-  </div>
-)}
-
+              <button
+                onClick={() => setShowWin(false)}
+                className="px-4 py-2 bg-blue-500 text-white rounded hover:bg-blue-600"
+              >
+                Close
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 }
