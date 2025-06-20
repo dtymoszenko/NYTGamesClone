@@ -5,6 +5,15 @@ import confetti from "canvas-confetti";
 /*                               PUZZLE DATA                                  */
 /* -------------------------------------------------------------------------- */
 
+function saveGameProgress(gameName) {
+  const store = JSON.parse(localStorage.getItem("gameProgress") || "{}");
+  if (!store[gameName]) {
+    store[gameName] = true;
+    localStorage.setItem("gameProgress", JSON.stringify(store));
+    window.dispatchEvent(new Event("gameCompleted"));
+  }
+}
+
 // 6×8 letter grid (Actual puzzle!!!)
 // Row 0 → top row, Row 7 → bottom row
 const initialGrid = [
@@ -247,6 +256,7 @@ export default function Strands() {
 
         //Show the win modal if all words have been found
         if (newWords.length === wordList.length) {
+          saveGameProgress("strands");
           setShowWin(true);
           setCopied(false);
           //Confetti when winning!! :D

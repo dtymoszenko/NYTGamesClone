@@ -8,6 +8,15 @@
 
 import { useState, useMemo, useEffect, useRef } from "react";
 
+function saveGameProgress(gameName) {
+  const store = JSON.parse(localStorage.getItem("gameProgress") || "{}");
+  if (!store[gameName]) {
+    store[gameName] = true;
+    localStorage.setItem("gameProgress", JSON.stringify(store));
+    window.dispatchEvent(new Event("gameCompleted"));
+  }
+}
+
 /* ---------- GRID SETUP ---------- */
 const SIZE = 5; // 5 rows × 5 columns
 const CELL = 72; // pixel size of each square
@@ -79,6 +88,9 @@ export default function Mini() {
 
   const containerRef = useRef(null); // autofocus wrapper
 
+  // tracks if game is completed
+  const hasMarkedComplete = useRef(false);
+
   /* ---------- EFFECT: start timer ---------- */
   useEffect(() => {
     timerRef.current = setInterval(() => setElapsed((s) => s + 1), 1000);
@@ -106,15 +118,25 @@ export default function Mini() {
     }
   }, []);
 
-  //Listener which detects whenever the board is completed
+  //Listener which detects whenever the board is completed, and implementing game storage
   useEffect(() => {
     const isCorrect = board.every((row, r) =>
       row.every((cell, c) =>
         blackBoxes.has(`${r}-${c}`) ? true : cell === solution[r][c]
       )
     );
-    if (isCorrect) {
+
+    if (isCorrect && !hasMarkedComplete.current) {
       setShowModal(true);
+
+      const store = JSON.parse(localStorage.getItem("gameProgress") || "{}");
+      if (!store["mini"]) {
+        store["mini"] = true;
+        localStorage.setItem("gameProgress", JSON.stringify(store));
+        window.dispatchEvent(new Event("gameCompleted"));
+      }
+
+      hasMarkedComplete.current = true;
     }
   }, [board]);
 

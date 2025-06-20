@@ -1,5 +1,14 @@
 import { useEffect, useState } from "react";
 
+function saveGameProgress(gameName) {
+  const store = JSON.parse(localStorage.getItem("gameProgress") || "{}");
+  if (!store[gameName]) {
+    store[gameName] = true;
+    localStorage.setItem("gameProgress", JSON.stringify(store));
+    window.dispatchEvent(new Event("gameCompleted"));
+  }
+}
+
 export default function Wordle() {
   const numRows = 6; // Players get 6 guesses
   const numCols = 5; // Each guess is a 5-letter word
@@ -149,6 +158,7 @@ export default function Wordle() {
               if (i === numCols - 1) {
                 setTimeout(() => {
                   if (guess === targetWord) {
+                    saveGameProgress("wordle");
                     // Build share string, open modal, copy to clipboard
                     const share = buildShareString();
                     setShareText(share);
