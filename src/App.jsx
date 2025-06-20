@@ -1,20 +1,25 @@
-import { Routes, Route, Link } from 'react-router-dom';
+import { Routes, Route, Link } from "react-router-dom";
 
 function App() {
-  {/* Adjust gap here in first div to change distance from header */}
+  {
+    /* Adjust gap here in first div to change distance from header */
+  }
   return (
     <div className="min-h-screen bg-[#fffbea] text-gray-800 flex flex-col gap-8">
-
       <header className="w-full bg-[#fff176] shadow-md mb-8 rounded-b-2xl">
         <div className="w-full px-4 pt-6 pb-16 flex flex-col items-center text-center">
           {/* Clickable logo returns to Home */}
           <Link to="/" className="flex items-center justify-center">
-            <h1 className="text-4xl font-extrabold mb-1">
-              NinaYT
-            </h1>
+            <h1 className="text-4xl font-extrabold mb-1">NinaYT</h1>
           </Link>
           <p className="text-lg text-gray-700">
-            <span role="img" aria-label="heart">💛</span>Our Daily Ritual Personalized<span role="img" aria-label="heart">💛</span>
+            <span role="img" aria-label="heart">
+              💛
+            </span>
+            Our Daily Ritual Personalized
+            <span role="img" aria-label="heart">
+              💛
+            </span>
           </p>
         </div>
       </header>
@@ -37,7 +42,13 @@ function Home() {
   return (
     <div className="flex justify-center flex-wrap gap-6">
       <GameCard
-        icon="🟩"
+        icon={
+          <img
+            src="/NYTWordleRecoloredLogo.png"
+            alt="Wordle Logo"
+            className="h-20 w-20 object-contain"
+          />
+        }
         title="Wordle"
         description=""
         color="bg-gray-200"
@@ -51,7 +62,13 @@ function Home() {
         </button>
       </GameCard>
       <GameCard
-        icon="🔷"
+        icon={
+          <img
+            src="/NYTStrandsLogo.png"
+            alt="Strands Logo"
+            className="h-20 w-20 object-contain"
+          />
+        }
         title="Strands"
         description=""
         color="bg-teal-200"
@@ -65,7 +82,13 @@ function Home() {
         </button>
       </GameCard>
       <GameCard
-        icon="✏️"
+        icon={
+          <img
+            src="/NYTMiniLogo.png"
+            alt="Mini Crossword Logo"
+            className="h-20 w-20 object-contain"
+          />
+        }
         title="The Mini"
         description=""
         color="bg-yellow-200"
@@ -106,13 +129,9 @@ function GameCard({ title, description, color, to, icon, children }) {
       {/* body section */}
       <div className="px-6 flex flex-col justify-center items-center text-center h-[40%]">
         {description && (
-          <p className="text-gray-700 text-sm mb-2">
-            {description}
-          </p>
+          <p className="text-gray-700 text-sm mb-2">{description}</p>
         )}
-        <div className="w-full flex justify-center">
-          {children}
-        </div>
+        <div className="w-full flex justify-center">{children}</div>
       </div>
     </Link>
   );
@@ -120,9 +139,11 @@ function GameCard({ title, description, color, to, icon, children }) {
 
 /* ---------- Links to Games ---------- */
 import Wordle from "./Wordle.jsx";
-import Strands from './Strands.jsx';
-function Crossword(){
-  return <p className="text-center mt-20 text-xl">✏️ Crossword game will go here!</p>;
+import Strands from "./Strands.jsx";
+function Crossword() {
+  return (
+    <p className="text-center mt-20 text-xl">✏️ Crossword game will go here!</p>
+  );
 }
 
 export default App;

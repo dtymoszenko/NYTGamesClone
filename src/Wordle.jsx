@@ -276,7 +276,7 @@ export default function Wordle() {
                   <div
                     className={`absolute inset-0 flex items-center justify-center text-2xl font-bold ${
                       status === "yellow"
-                        ? "bg-yellow-400 text-white border-yellow-400"
+                        ? "bg-yellow-300 text-white border-yellow-400"
                         : status === "blue"
                         ? "bg-blue-300 text-white border-blue-300"
                         : status === "gray"
@@ -310,7 +310,7 @@ export default function Wordle() {
 
             <button
               onClick={() => navigator.clipboard.writeText(shareText)}
-              className="w-full bg-yellow-400 text-white py-2 rounded-lg shadow hover:brightness-105"
+              className="w-full bg-yellow-300 text-white py-2 rounded-lg shadow hover:brightness-105"
             >
               Copy to clipboard
             </button>
@@ -334,7 +334,7 @@ export default function Wordle() {
               const status = keyStatuses[key];
               // Map key status to background color
               let keyColor = "bg-white text-black";
-              if (status === "yellow") keyColor = "bg-yellow-400 text-white";
+              if (status === "yellow") keyColor = "bg-yellow-300 text-white";
               else if (status === "blue") keyColor = "bg-blue-200 text-black";
               else if (status === "gray") keyColor = "bg-gray-400 text-white";
 
