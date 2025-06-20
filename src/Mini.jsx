@@ -76,6 +76,8 @@ export default function Mini() {
   const [direction, setDirection] = useState("across"); // typing direction
   const [elapsed, setElapsed] = useState(0); // seconds since start
   const [showModal, setShowModal] = useState(false); // victory modal
+  const [showIncorrectModal, setShowIncorrectModal] = useState(false); //loser modal info
+  const [canShowIncorrect, setCanShowIncorrect] = useState(true);
   const [copySuccess, setCopySuccess] = useState(false); // copied hint
   //refs for dropdowns
   const checkMenuRef = useRef(null);
@@ -120,12 +122,31 @@ export default function Mini() {
 
   //Listener which detects whenever the board is completed, and implementing game storage
   useEffect(() => {
+    // Check if the board matches the solution
     const isCorrect = board.every((row, r) =>
       row.every((cell, c) =>
         blackBoxes.has(`${r}-${c}`) ? true : cell === solution[r][c]
       )
     );
 
+    // Check if the board is completely filled (excluding black boxes)
+    const isFilled = board.every((row, r) =>
+      row.every((cell, c) => (blackBoxes.has(`${r}-${c}`) ? true : cell !== ""))
+    );
+
+    // If filled and not correct, show "Not quite!" modal (but only once per fill)
+    if (
+      isFilled &&
+      !isCorrect &&
+      canShowIncorrect &&
+      !showIncorrectModal &&
+      !showModal // avoid conflict with win modal
+    ) {
+      setShowIncorrectModal(true);
+      setCanShowIncorrect(false); // Prevent repeat popup until user edits
+    }
+
+    // If correct and not already marked complete, trigger win
     if (isCorrect && !hasMarkedComplete.current) {
       setShowModal(true);
 
@@ -138,7 +159,7 @@ export default function Mini() {
 
       hasMarkedComplete.current = true;
     }
-  }, [board]);
+  }, [board, canShowIncorrect, showIncorrectModal, showModal]);
 
   // Listen for clicks not in dropdown (to close it)
   useEffect(() => {
@@ -282,12 +303,12 @@ export default function Mini() {
     setBoard((prev) =>
       prev.map((row, ri) => row.map((v, ci) => (ri === r && ci === c ? ch : v)))
     );
-    // any manual edit resets that square’s status back to null
     setStatus((prev) =>
       prev.map((row, ri) =>
         row.map((v, ci) => (ri === r && ci === c ? null : v))
       )
     );
+    setCanShowIncorrect(true);
   };
 
   /* ---------- REVEAL UTILITIES (lock & blue) ---------- */
@@ -627,6 +648,22 @@ export default function Mini() {
           </div>
         ))}
       </div>
+
+      {/* INCORRECT MODAL */}
+      {showIncorrectModal && (
+        <div className="fixed inset-0 z-50 grid place-items-center bg-black/50">
+          <div className="bg-white rounded-lg p-6 w-80 text-center space-y-4">
+            <h2 className="text-2xl font-bold">Not quite!</h2>
+            <p>Some letters are wrong — keep trying.</p>
+            <button
+              onClick={() => setShowIncorrectModal(false)}
+              className="w-full bg-blue-500 text-white py-2 rounded-lg shadow hover:brightness-105"
+            >
+              OK
+            </button>
+          </div>
+        </div>
+      )}
 
       {/* VICTORY MODAL */}
       {showModal && (

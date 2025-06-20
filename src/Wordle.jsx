@@ -57,6 +57,9 @@ export default function Wordle() {
   // track loss state to customize modal
   const [didLose, setDidLose] = useState(false);
 
+  // Check if copied to clipboard
+  const [copied, setCopied] = useState(false);
+
   // build the grid string
   function buildShareString(attemptLabel = currentRow + 1) {
     let grid = "";
@@ -234,6 +237,11 @@ export default function Wordle() {
     return () => window.removeEventListener("keydown", handleKeyDown);
   }, [board, currentRow, currentCol, isGameOver, isRevealing, statuses]); // added statuses so buildShareString is up-to-date
 
+  // Reset "Copied!" label whenever modal closes
+  useEffect(() => {
+    if (!showModal) setCopied(false);
+  }, [showModal]);
+
   // --- Virtual keyboard layout (QWERTY style) ---
   const keyboardRows = [
     ["Q", "W", "E", "R", "T", "Y", "U", "I", "O", "P"],
@@ -334,10 +342,16 @@ export default function Wordle() {
             </pre>
 
             <button
-              onClick={() => navigator.clipboard.writeText(shareText)}
-              className="w-full bg-yellow-300 text-white py-2 rounded-lg shadow hover:brightness-105"
+              onClick={() => {
+                navigator.clipboard.writeText(shareText).then(() => {
+                  setCopied(true);
+                  // Auto-reset after 2s so user can copy again if desired
+                  setTimeout(() => setCopied(false), 2000);
+                });
+              }}
+              className="w-full bg-yellow-300 text-white py-2 rounded-lg shadow hover:brightness-105 transition-colors"
             >
-              Copy to clipboard
+              {copied ? "Copied!" : "Copy to clipboard"}
             </button>
 
             <button
