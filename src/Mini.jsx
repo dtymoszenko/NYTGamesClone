@@ -40,7 +40,7 @@ const solution = [
   ["", "S", "L", "A", "Y"],
 ];
 
-// Clues for crossword
+// Clues for crossword (keys = first non-black square of the word)
 const clues = {
   across: {
     "0-0": "A",
@@ -53,12 +53,13 @@ const clues = {
     "0-0": "F",
     "0-1": "G",
     "0-2": "H",
-    "0-3": "I",
-    "0-4": "J",
+    "1-3": "I", // 4-Down now starts at D (row 1 col 3)
+    "2-4": "J", // 5-Down now starts at N (row 2 col 4)
   },
 };
 
 // Creates easily traversible sorting of clues (used for arrows where hints are written)
+//Updated to skip black boxes so doesn't get stuck when navigating via navbar
 const clueOrder = [
   ...Object.keys(clues.across).map((key) => ({ key, direction: "across" })),
   ...Object.keys(clues.down).map((key) => ({ key, direction: "down" })),
@@ -261,11 +262,31 @@ export default function Mini() {
   };
 
   // Function which actually moves to next clue (using logic from before)
-  const goToClue = (index) => {
-    const { key, direction } = clueOrder[index];
-    const [r, c] = key.split("-").map(Number);
-    setSelected([r, c]);
-    setDirection(direction);
+  const goToClue = (startIndex) => {
+    const total = clueOrder.length;
+    for (let offset = 0; offset < total; offset++) {
+      const { key, direction } = clueOrder[(startIndex + offset) % total];
+      let [r, c] = key.split("-").map(Number);
+
+      // Move to first valid (non-black) square in that word
+      let found = false;
+      if (direction === "across") {
+        while (c < SIZE && blackBoxes.has(`${r}-${c}`)) c++;
+        if (c < SIZE) found = true;
+      } else {
+        while (r < SIZE && blackBoxes.has(`${r}-${c}`)) r++;
+        if (r < SIZE) found = true;
+      }
+
+      if (found && !blackBoxes.has(`${r}-${c}`)) {
+        setSelected([r, c]);
+        setDirection(direction);
+        return;
+      }
+    }
+
+    // Fallback if somehow nothing valid found
+    console.warn("No valid clue cell found.");
   };
 
   /* ---------- CURSOR HELPERS ---------- */
@@ -563,7 +584,7 @@ export default function Mini() {
             const inWord = currentWordCells.has(key);
             const flag = status[r][c]; // null | true | false
             const text = flag === true ? "text-blue-600" : "text-black";
-            const ring = isSel ? "outline outline-2 outline-blue-400" : "";
+            const ring = ""; // no outline
             let bg = "bg-white";
             if (isSel) bg = "bg-yellow-200";
             else if (inWord) bg = "bg-blue-100";

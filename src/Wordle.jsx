@@ -12,6 +12,7 @@ function saveGameProgress(gameName) {
 export default function Wordle() {
   const numRows = 6; // Players get 6 guesses
   const numCols = 5; // Each guess is a 5-letter word
+  const STORAGE_KEY = "wordleState"; // NEW – all in one place (storage)
 
   const targetWord = "WIFEY"; // This is the word user is guessing, currently HARDCODED obviously
 
@@ -72,6 +73,28 @@ export default function Wordle() {
     }
     return `NinaYT Wordle ${attemptLabel}/${numRows}\n${grid}`;
   }
+
+  /* -------------------------------------------------------- */
+  /*  Load saved board / progress if it exists on first mount  */
+  /* -------------------------------------------------------- */
+  useEffect(() => {
+    try {
+      const saved = JSON.parse(localStorage.getItem(STORAGE_KEY) || "null");
+      if (saved && saved.targetWord === targetWord) {
+        // sanity check
+        setBoard(saved.board);
+        setStatuses(saved.statuses);
+        setKeyStatuses(saved.keyStatuses);
+        setCurrentRow(saved.currentRow);
+        setCurrentCol(saved.currentCol);
+        setIsGameOver(saved.isGameOver);
+        setDidLose(saved.didLose);
+        // flipping / pops reset to false for cleanliness; reveal is always off
+      }
+    } catch (_) {
+      /* ignore malformed storage */
+    }
+  }, []);
 
   // Keyboard input logic
   useEffect(() => {
@@ -241,6 +264,31 @@ export default function Wordle() {
   useEffect(() => {
     if (!showModal) setCopied(false);
   }, [showModal]);
+
+  /* -------------------------------------------------------- */
+  /*  Persist state to localStorage whenever it changes        */
+  /* -------------------------------------------------------- */
+  useEffect(() => {
+    const data = {
+      targetWord, // lets you detect stale save if you change puzzle
+      board,
+      statuses,
+      keyStatuses,
+      currentRow,
+      currentCol,
+      isGameOver,
+      didLose,
+    };
+    localStorage.setItem(STORAGE_KEY, JSON.stringify(data));
+  }, [
+    board,
+    statuses,
+    keyStatuses,
+    currentRow,
+    currentCol,
+    isGameOver,
+    didLose,
+  ]);
 
   // --- Virtual keyboard layout (QWERTY style) ---
   const keyboardRows = [

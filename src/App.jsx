@@ -120,10 +120,13 @@ function Home({ showSecret, setShowSecret }) {
               💛 Secret Message 💛
             </h2>
             <p className="text-gray-800">
-              You are the best thing that has ever happened to me,
+              I love you Nina!!! You are the best thing that has ever happened
+              to me, and my favorite part of everyday.
               <br />
-              and my favorite part of everyday. I love you Nina!!!
-              <br />I hope you enjoyed NinaYT and it was worth the wait
+              <br />I hope you enjoyed NinaYT and it was worth the wait.
+              <br />
+              P.S. I want to write a lot more but I'm boarding the plane... Cya
+              soon!
             </p>
             <button
               onClick={() => setShowSecret(false)}
