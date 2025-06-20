@@ -5,7 +5,7 @@
 // Wordle-style on-screen keyboard.
 // ---------------------------------------------------------------------------
 
-import { useState, useMemo } from "react";
+import { useState, useMemo, useEffect } from "react";
 
 /* ---------- GRID SETUP ---------- */
 const SIZE = 5; // 5 rows × 5 columns
@@ -67,6 +67,19 @@ export default function Mini() {
     return map;
   }, []);
 
+  // Highlight 1-across cell on first load
+  useEffect(() => {
+    for (let r = 0; r < SIZE; r++) {
+      for (let c = 0; c < SIZE; c++) {
+        const key = `${r}-${c}`;
+        if (!blackBoxes.has(key)) {
+          setSelected([r, c]);
+          return;
+        }
+      }
+    }
+  }, []);
+
   // Word highlight logic (dynamic, depends on direction)
   const currentWordCells = useMemo(() => {
     if (!selected) return new Set();
@@ -89,6 +102,38 @@ export default function Mini() {
 
     return cells;
   }, [selected, direction]);
+
+  // Returns the next editable cell in the current word (skips blue / black)
+  const nextCell = (r, c) => {
+    if (direction === "across") {
+      for (let nc = c + 1; nc < SIZE; nc++) {
+        if (blackBoxes.has(`${r}-${nc}`)) break;
+        if (status[r][nc] !== true) return [r, nc];
+      }
+    } else {
+      for (let nr = r + 1; nr < SIZE; nr++) {
+        if (blackBoxes.has(`${nr}-${c}`)) break;
+        if (status[nr][c] !== true) return [nr, c];
+      }
+    }
+    return [r, c]; // stay if no further move
+  };
+
+  // Returns the previous editable cell in the current word (used for Backspace)
+  const prevCell = (r, c) => {
+    if (direction === "across") {
+      for (let nc = c - 1; nc >= 0; nc--) {
+        if (blackBoxes.has(`${r}-${nc}`)) break;
+        if (status[r][nc] !== true) return [r, nc];
+      }
+    } else {
+      for (let nr = r - 1; nr >= 0; nr--) {
+        if (blackBoxes.has(`${nr}-${c}`)) break;
+        if (status[nr][c] !== true) return [nr, c];
+      }
+    }
+    return [r, c];
+  };
 
   // Handles selecting a cell and toggling direction on double-tap
   const handleCellClick = (r, c) => {
@@ -119,15 +164,23 @@ export default function Mini() {
   // Handles typing from the keyboard or virtual keys
   const handleKey = (key) => {
     if (!selected) return;
-    const [r, c] = selected;
+    let [r, c] = selected;
+
     if (blackBoxes.has(`${r}-${c}`) || status[r][c] === true) return;
 
     if (key === "Backspace") {
       updateCell(r, c, "");
+      const [pr, pc] = prevCell(r, c);
+      setSelected([pr, pc]);
       return;
     }
+
     const ch = key.toUpperCase();
-    if (/^[A-Z]$/.test(ch)) updateCell(r, c, ch);
+    if (/^[A-Z]$/.test(ch)) {
+      updateCell(r, c, ch);
+      const [nr, nc] = nextCell(r, c);
+      setSelected([nr, nc]);
+    }
   };
 
   // Checks user input against solution grid
