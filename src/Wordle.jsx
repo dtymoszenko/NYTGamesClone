@@ -1,8 +1,8 @@
 import { useEffect, useState } from "react";
 
 export default function Wordle() {
-  const numRows = 6;   // Players get 6 guesses
-  const numCols = 5;   // Each guess is a 5-letter word
+  const numRows = 6; // Players get 6 guesses
+  const numCols = 5; // Each guess is a 5-letter word
 
   const targetWord = "PLANT"; // This is the word user is guessing, currently HARDCODED obviously
 
@@ -211,7 +211,7 @@ export default function Wordle() {
     // Attach keyboard listener
     window.addEventListener("keydown", handleKeyDown);
     return () => window.removeEventListener("keydown", handleKeyDown);
-  }, [board, currentRow, currentCol, isGameOver, isRevealing, statuses]);  // added statuses so buildShareString is up-to-date
+  }, [board, currentRow, currentCol, isGameOver, isRevealing, statuses]); // added statuses so buildShareString is up-to-date
 
   // --- Virtual keyboard layout (QWERTY style) ---
   const keyboardRows = [
@@ -232,6 +232,14 @@ export default function Wordle() {
 
   return (
     <div className="flex flex-col items-center gap-2">
+      <p className="text-center text-gray-800 font-semibold text-lg">
+        In the Ninaverse, we play by different rules:
+      </p>
+      <p className="text-center text-gray-700 text-sm mt-1">
+        🟨 = correct letter & position, 🟦 = correct letter wrong spot, ⬛ = not
+        in the word
+      </p>
+
       {/* ---------- WORDLE BOARD ---------- */}
       {board.map((row, rowIndex) => (
         <div key={rowIndex} className="flex gap-1 justify-center">
@@ -296,7 +304,9 @@ export default function Wordle() {
             <h2 className="text-2xl font-bold">🎉 You guessed it!</h2>
 
             {/* share grid */}
-            <pre className="font-mono whitespace-pre leading-5">{shareText}</pre>
+            <pre className="font-mono whitespace-pre leading-5">
+              {shareText}
+            </pre>
 
             <button
               onClick={() => navigator.clipboard.writeText(shareText)}
@@ -333,7 +343,9 @@ export default function Wordle() {
                   key={key}
                   onClick={() => handleVirtualKey(key)}
                   className={`flex-1 sm:flex-none sm:w-10 md:w-12 lg:w-14 h-12 rounded-lg shadow text-sm font-medium border border-gray-300 hover:brightness-105 transition ${keyColor} ${
-                    key === "Enter" || key === "Backspace" ? "sm:w-20 md:w-24" : ""
+                    key === "Enter" || key === "Backspace"
+                      ? "sm:w-20 md:w-24"
+                      : ""
                   }`}
                 >
                   {key === "Backspace" ? "⌫" : key}

@@ -100,7 +100,7 @@ function GameCard({ title, description, color, to, icon, children }) {
         `}
       >
         <span className="text-5xl">{icon}</span>
-        <h2 className="text-2xl font-bold">{title}</h2>
+        <h2 className="text-3xl font-semibold">{title}</h2>
       </div>
 
       {/* body section */}
@@ -122,7 +122,7 @@ function GameCard({ title, description, color, to, icon, children }) {
 import Wordle from "./Wordle.jsx";
 import Strands from './Strands.jsx';
 function Crossword(){
-  return <p className="text-center mt-20 text-xl">✏️ The Mini game will go here!</p>;
+  return <p className="text-center mt-20 text-xl">✏️ Crossword game will go here!</p>;
 }
 
 export default App;
