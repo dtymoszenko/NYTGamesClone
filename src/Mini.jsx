@@ -1,11 +1,11 @@
 // Mini.jsx
 // ---------------------------------------------------------------------------
 // 5×5 crossword grid with black boxes, automatic clue numbers, answer checks,
-// blue-text locks for correct letters, red slashes for wrong letters, and a
-// Wordle-style on-screen keyboard.
+// blue-text locks for correct letters, red slashes for wrong letters, a timer,
+// a victory modal (with copy-to-clipboard), and a Wordle-style keyboard.
 // ---------------------------------------------------------------------------
 
-import { useState, useMemo, useEffect } from "react";
+import { useState, useMemo, useEffect, useRef } from "react";
 
 /* ---------- GRID SETUP ---------- */
 const SIZE = 5; // 5 rows × 5 columns
@@ -18,10 +18,10 @@ const kbRows = [
   ["Z", "X", "C", "V", "B", "N", "M", "Backspace", "Enter"],
 ];
 
-// Placing locations for blackboxes
-const blackBoxes = new Set(["0-3", "0-4", "1-4", "4-0"]);
+/* ---------- BOARD DATA ---------- */
+const blackBoxes = new Set(["0-3", "0-4", "1-4", "4-0"]); // black squares
 
-// Hardcoded board
+// empty strings in solution correspond to black squares above
 const solution = [
   ["S", "P", "A", "", ""],
   ["H", "A", "N", "D", ""],
@@ -30,23 +30,51 @@ const solution = [
   ["", "S", "L", "A", "Y"],
 ];
 
+/* ------------------------------------------------------------------------ */
 export default function Mini() {
-  // board: 2D array of user input letters
+  /* ---------- STATE ---------- */
   const [board, setBoard] = useState(
     Array.from({ length: SIZE }, () => Array(SIZE).fill(""))
   );
-  // status: null = unchecked, true = correct, false = incorrect
   const [status, setStatus] = useState(
     Array.from({ length: SIZE }, () => Array(SIZE).fill(null))
-  );
-  const [selected, setSelected] = useState(null); // [r, c]
-  const [direction, setDirection] = useState("across"); // or "down"
+  ); // null|true|false
+  const [selected, setSelected] = useState(null); // active [row,col]
+  const [direction, setDirection] = useState("across"); // "across" | "down"
 
-  // Auto-number clue cells
+  const [elapsed, setElapsed] = useState(0); // timer (sec)
+  const [showModal, setShowModal] = useState(false); // modal flag
+  const [copied, setCopied] = useState(false); // copy-feedback
+
+  const timerRef = useRef(null); // keep interval id so we can clear it
+  const containerRef = useRef(null); // auto-focus for key input
+
+  /* ---------- START / STOP TIMER ---------- */
+  useEffect(() => {
+    timerRef.current = setInterval(() => setElapsed((s) => s + 1), 1000);
+    return () => clearInterval(timerRef.current); // cleanup
+  }, []);
+
+  /* ---------- AUTO-FOCUS & highlight first cell ---------- */
+  useEffect(() => {
+    containerRef.current?.focus(); // immediate typing
+
+    // highlight first non-black square (1-Across)
+    for (let r = 0; r < SIZE; r++) {
+      for (let c = 0; c < SIZE; c++) {
+        if (!blackBoxes.has(`${r}-${c}`)) {
+          setSelected([r, c]);
+          return;
+        }
+      }
+    }
+  }, []);
+
+  /* ---------- AUTO-NUMBER CLUES ---------- */
   const clueNumbers = useMemo(() => {
-    let across = 1;
-    let down = 1;
-    const map = {};
+    let across = 1,
+      down = 1;
+    const map = {}; // { "r-c": number }
 
     for (let r = 0; r < SIZE; r++) {
       for (let c = 0; c < SIZE; c++) {
@@ -67,20 +95,7 @@ export default function Mini() {
     return map;
   }, []);
 
-  // Highlight 1-across cell on first load
-  useEffect(() => {
-    for (let r = 0; r < SIZE; r++) {
-      for (let c = 0; c < SIZE; c++) {
-        const key = `${r}-${c}`;
-        if (!blackBoxes.has(key)) {
-          setSelected([r, c]);
-          return;
-        }
-      }
-    }
-  }, []);
-
-  // Word highlight logic (dynamic, depends on direction)
+  /* ---------- WORD HIGHLIGHT (across / down) ---------- */
   const currentWordCells = useMemo(() => {
     if (!selected) return new Set();
     const [r, c] = selected;
@@ -99,11 +114,10 @@ export default function Mini() {
       while (end < SIZE - 1 && !blackBoxes.has(`${end + 1}-${c}`)) end++;
       for (let i = start; i <= end; i++) cells.add(`${i}-${c}`);
     }
-
     return cells;
   }, [selected, direction]);
 
-  // Returns the next editable cell in the current word (skips blue / black)
+  /* ---------- CURSOR MOVEMENT HELPERS ---------- */
   const nextCell = (r, c) => {
     if (direction === "across") {
       for (let nc = c + 1; nc < SIZE; nc++) {
@@ -116,10 +130,9 @@ export default function Mini() {
         if (status[nr][c] !== true) return [nr, c];
       }
     }
-    return [r, c]; // stay if no further move
+    return [r, c];
   };
 
-  // Returns the previous editable cell in the current word (used for Backspace)
   const prevCell = (r, c) => {
     if (direction === "across") {
       for (let nc = c - 1; nc >= 0; nc--) {
@@ -135,21 +148,17 @@ export default function Mini() {
     return [r, c];
   };
 
-  // Handles selecting a cell and toggling direction on double-tap
+  /* ---------- EVENT HANDLERS ---------- */
   const handleCellClick = (r, c) => {
-    const key = `${r}-${c}`;
-    if (blackBoxes.has(key)) return;
+    if (blackBoxes.has(`${r}-${c}`)) return;
 
     if (selected?.[0] === r && selected?.[1] === c) {
-      // toggle direction if same cell is tapped again
-      setDirection((prev) => (prev === "across" ? "down" : "across"));
+      setDirection((d) => (d === "across" ? "down" : "across"));
     } else {
-      // move selection to new cell but keep direction the same
       setSelected([r, c]);
     }
   };
 
-  // Updates the letter in the grid at [r][c]
   const updateCell = (r, c, ch) => {
     setBoard((prev) =>
       prev.map((row, ri) => row.map((v, ci) => (ri === r && ci === c ? ch : v)))
@@ -161,11 +170,9 @@ export default function Mini() {
     );
   };
 
-  // Handles typing from the keyboard or virtual keys
   const handleKey = (key) => {
     if (!selected) return;
     let [r, c] = selected;
-
     if (blackBoxes.has(`${r}-${c}`) || status[r][c] === true) return;
 
     if (key === "Backspace") {
@@ -183,8 +190,13 @@ export default function Mini() {
     }
   };
 
-  // Checks user input against solution grid
+  /* ---------- CHECK ANSWERS & TRIGGER WIN ---------- */
   const checkAnswers = () => {
+    const allCorrectRow = (row, r) =>
+      row.every((_, c) =>
+        blackBoxes.has(`${r}-${c}`) ? true : board[r][c] === solution[r][c]
+      );
+
     setStatus((prev) =>
       prev.map((row, r) =>
         row.map((_, c) => {
@@ -194,10 +206,29 @@ export default function Mini() {
         })
       )
     );
+
+    if (board.every(allCorrectRow)) {
+      clearInterval(timerRef.current); // stop timer
+      setShowModal(true); // show win modal
+    }
   };
 
+  /* ---------- COPY STRING TO CLIPBOARD ---------- */
+  const handleCopy = () => {
+    const secs = elapsed % 60;
+    const mins = Math.floor(elapsed / 60);
+    const text = `I finished the NinaYT Mini in ${mins}m ${secs}s.`;
+
+    navigator.clipboard.writeText(text).then(() => {
+      setCopied(true);
+      setTimeout(() => setCopied(false), 1500); // reset label
+    });
+  };
+
+  /* ---------- RENDER ---------- */
   return (
     <div
+      ref={containerRef} /* auto-focus for typing */
       className="p-4 flex flex-col items-center gap-6"
       tabIndex={0}
       onKeyDown={(e) => handleKey(e.key)}
@@ -216,7 +247,8 @@ export default function Mini() {
           row.map((letter, c) => {
             const key = `${r}-${c}`;
 
-            if (blackBoxes.has(key)) {
+            /* ----- Black square ----- */
+            if (blackBoxes.has(key))
               return (
                 <div
                   key={key}
@@ -224,8 +256,8 @@ export default function Mini() {
                   style={{ width: CELL, height: CELL }}
                 />
               );
-            }
 
+            /* ----- Typable square ----- */
             const isSel = selected?.[0] === r && selected?.[1] === c;
             const inWord = currentWordCells.has(key);
             const flag = status[r][c];
@@ -248,6 +280,7 @@ export default function Mini() {
                     {clueNumbers[key]}
                   </span>
                 )}
+
                 {/* red slash if wrong */}
                 {flag === false && (
                   <span className="pointer-events-none absolute inset-0 flex items-center justify-center">
@@ -287,6 +320,41 @@ export default function Mini() {
       >
         Check Answers
       </button>
+
+      {/* TIMER DISPLAY */}
+      <p className="text-gray-600 text-sm">
+        Time: {Math.floor(elapsed / 60)}m {elapsed % 60}s
+      </p>
+
+      {/* VICTORY MODAL */}
+      {showModal && (
+        <div className="fixed inset-0 z-50 grid place-items-center bg-black/50">
+          <div className="bg-white rounded-lg p-6 w-80 text-center space-y-4">
+            <h2 className="text-2xl font-bold">🎉 Congratulations!</h2>
+            <p>
+              You solved the Mini in{" "}
+              <span className="font-semibold">
+                {Math.floor(elapsed / 60)}m {elapsed % 60}s
+              </span>
+            </p>
+
+            {/* COPY TO CLIPBOARD */}
+            <button
+              onClick={handleCopy}
+              className="w-full bg-green-500 text-white py-2 rounded-lg shadow hover:brightness-105 transition"
+            >
+              {copied ? "Copied!" : "Copy time to clipboard"}
+            </button>
+
+            <button
+              onClick={() => setShowModal(false)}
+              className="w-full bg-blue-500 text-white py-2 rounded-lg shadow hover:brightness-105"
+            >
+              Close
+            </button>
+          </div>
+        </div>
+      )}
     </div>
   );
 }
