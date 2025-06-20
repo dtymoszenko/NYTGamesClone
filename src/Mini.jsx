@@ -31,6 +31,30 @@ const solution = [
   ["", "S", "L", "A", "Y"],
 ];
 
+// Clues for crossword
+const clues = {
+  across: {
+    "0-0": "A",
+    "1-0": "B",
+    "2-0": "C",
+    "3-0": "D",
+    "4-1": "E",
+  },
+  down: {
+    "0-0": "F",
+    "0-1": "G",
+    "0-2": "H",
+    "0-3": "I",
+    "0-4": "J",
+  },
+};
+
+// Creates easily traversible sorting of clues (used for arrows where hints are written)
+const clueOrder = [
+  ...Object.keys(clues.across).map((key) => ({ key, direction: "across" })),
+  ...Object.keys(clues.down).map((key) => ({ key, direction: "down" })),
+];
+
 export default function Mini() {
   /* ---------- STATE ---------- */
   const [board, setBoard] = useState(
@@ -47,6 +71,7 @@ export default function Mini() {
   //refs for dropdowns
   const checkMenuRef = useRef(null);
   const revealMenuRef = useRef(null);
+  const timerRef = useRef(null);
 
   // dropdown menus for the toolbar
   const [showRevealMenu, setShowRevealMenu] = useState(false);
@@ -56,9 +81,17 @@ export default function Mini() {
 
   /* ---------- EFFECT: start timer ---------- */
   useEffect(() => {
-    const id = setInterval(() => setElapsed((s) => s + 1), 1000);
-    return () => clearInterval(id);
+    timerRef.current = setInterval(() => setElapsed((s) => s + 1), 1000);
+    return () => clearInterval(timerRef.current);
   }, []);
+
+  // Stops timer once victory is achieved
+  /* ---------- EFFECT: stop timer on win ---------- */
+  useEffect(() => {
+    if (showModal) {
+      clearInterval(timerRef.current);
+    }
+  }, [showModal]);
 
   /* ---------- EFFECT: autofocus & 1-Across cursor ---------- */
   useEffect(() => {
@@ -72,6 +105,18 @@ export default function Mini() {
       }
     }
   }, []);
+
+  //Listener which detects whenever the board is completed
+  useEffect(() => {
+    const isCorrect = board.every((row, r) =>
+      row.every((cell, c) =>
+        blackBoxes.has(`${r}-${c}`) ? true : cell === solution[r][c]
+      )
+    );
+    if (isCorrect) {
+      setShowModal(true);
+    }
+  }, [board]);
 
   // Listen for clicks not in dropdown (to close it)
   useEffect(() => {
@@ -135,6 +180,50 @@ export default function Mini() {
     }
     return cells;
   }, [selected, direction]);
+
+  // Find clue associated with what word is being selected
+  const getCurrentClue = () => {
+    if (!selected) return null;
+    const [r, c] = selected;
+    let startR = r,
+      startC = c;
+
+    if (direction === "across") {
+      while (startC > 0 && !blackBoxes.has(`${r}-${startC - 1}`)) startC--;
+      return clues.across[`${r}-${startC}`] || "(No clue)";
+    } else {
+      while (startR > 0 && !blackBoxes.has(`${startR - 1}-${c}`)) startR--;
+      return clues.down[`${startR}-${c}`] || "(No clue)";
+    }
+  };
+
+  // Finds which clue (indexed) I am currently located at, and allows to go from 1A->2A or 3D->4D, etc etc using arrows
+  const getCurrentClueIndex = () => {
+    if (!selected) return -1;
+    const [r, c] = selected;
+    let startR = r,
+      startC = c;
+
+    if (direction === "across") {
+      while (startC > 0 && !blackBoxes.has(`${r}-${startC - 1}`)) startC--;
+      return clueOrder.findIndex(
+        (clue) => clue.key === `${r}-${startC}` && clue.direction === "across"
+      );
+    } else {
+      while (startR > 0 && !blackBoxes.has(`${startR - 1}-${c}`)) startR--;
+      return clueOrder.findIndex(
+        (clue) => clue.key === `${startR}-${c}` && clue.direction === "down"
+      );
+    }
+  };
+
+  // Function which actually moves to next clue (using logic from before)
+  const goToClue = (index) => {
+    const { key, direction } = clueOrder[index];
+    const [r, c] = key.split("-").map(Number);
+    setSelected([r, c]);
+    setDirection(direction);
+  };
 
   /* ---------- CURSOR HELPERS ---------- */
   const nextCell = (r, c) => {
@@ -461,6 +550,41 @@ export default function Mini() {
             );
           })
         )}
+      </div>
+
+      {/* CURRENT CLUE BAR */}
+      <div className="w-full max-w-xl mt-4 px-4">
+        <div className="bg-blue-100 rounded-xl flex items-center justify-between px-4 py-2 shadow text-gray-800">
+          <button
+            onClick={() => {
+              const curr = getCurrentClueIndex();
+              if (curr > 0) {
+                goToClue(curr - 1);
+              }
+            }}
+            disabled={getCurrentClueIndex() === 0}
+            className="text-2xl font-extrabold mx-2 active:bg-gray-300 rounded transition disabled:opacity-30"
+          >
+            {"<"}
+          </button>
+
+          <div className="flex-1 text-center text-base font-semibold px-2">
+            {getCurrentClue()}
+          </div>
+
+          <button
+            onClick={() => {
+              const curr = getCurrentClueIndex();
+              if (curr >= 0) {
+                const next = (curr + 1) % clueOrder.length;
+                goToClue(next);
+              }
+            }}
+            className="text-2xl font-extrabold mx-2 active:bg-gray-300 rounded transition"
+          >
+            {">"}
+          </button>
+        </div>
       </div>
 
       {/* KEYBOARD */}
