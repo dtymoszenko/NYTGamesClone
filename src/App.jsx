@@ -14,7 +14,7 @@ function useProgress() {
   const calcProgress = () => {
     try {
       const store = JSON.parse(localStorage.getItem("gameProgress") || "{}");
-      const completed = games.filter((g) => store[g]).length;
+      const completed = games.filter((g) => store[g] === true).length;
       return completed / games.length;
     } catch {
       return 0;
@@ -84,6 +84,9 @@ function Home({ showSecret, setShowSecret }) {
     <div className="flex flex-col items-center gap-6">
       {/* Progress Bar */}
       <div className="w-96 text-center">
+        <div className="text-sm font-semibold text-gray-600 mb-1">
+          {`${Math.floor(progress * 3)}/3 Games Completed`}
+        </div>
         <div className="mb-1 text-base font-medium dark:text-white">
           {pct === 100
             ? "COMPLETED ✅"
