@@ -88,9 +88,7 @@ function Home({ showSecret, setShowSecret }) {
           {`${Math.floor(progress * 3)}/3 Games Completed`}
         </div>
         <div className="mb-1 text-base font-medium dark:text-white">
-          {pct === 100
-            ? "COMPLETED ✅"
-            : `Finish Games for Secret Message! (${pct}%)`}
+          {pct === 100 ? "✅" : `Finish Games for Secret Message! (${pct}%)`}
         </div>
         <div className="w-full h-3 bg-gray-200 rounded-full dark:bg-gray-700">
           <div
