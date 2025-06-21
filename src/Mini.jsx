@@ -43,18 +43,32 @@ const solution = [
 // Clues for crossword (keys = first non-black square of the word)
 const clues = {
   across: {
-    "0-0": "A",
-    "1-0": "B",
-    "2-0": "C",
-    "3-0": "D",
-    "4-1": "E",
+    "0-0": "Nina's favorite game where the roles never swap", //Spa
+
+    "1-0":
+      "Body part we have to showcase on OF if money starts getting too tight", //Hand
+
+    "2-0":
+      "Morgan Wallen's first name if he took up keys instead of country songs", //Organ
+
+    "3-0":
+      "What an Italian might say if you  use canned tomato sauce (Pity in Italian)", //Pieta
+
+    "4-1": "DAMNNNNNN GIRLLLL - What you do every time you dress up ", // Slay
   },
+
   down: {
-    "0-0": "F",
-    "0-1": "G",
-    "0-2": "H",
-    "1-3": "I", // 4-Down now starts at D (row 1 col 3)
-    "2-4": "J", // 5-Down now starts at N (row 2 col 4)
+    "0-0": "Nina's favorite activity during class... and outside of it too!", //Shop
+
+    "0-1": "Where Nina became a local and saw the same looking museums ", //Paris
+
+    "0-2":
+      "What a PiPhi might call themself or the prefix of the best type of hair ", //Angel
+
+    "1-3": "A marketing analyst at Dig Insights primarily deals with this", // 4-Down now starts at D (row 1 col 3), Data
+
+    "2-4":
+      "What Nina might say when I offer her a pound of plain chicken for dinner or the word we always see in crosswords together", // 5-Down now starts at N (row 2 col 4) Nay
   },
 };
 
@@ -456,7 +470,7 @@ export default function Mini() {
   return (
     <div
       ref={containerRef}
-      className="p-4 flex flex-col items-center gap-4"
+      className="p-4 flex flex-col items-center gap-4 focus:outline-none"
       tabIndex={0}
       onKeyDown={(e) => handleKey(e.key)}
     >
@@ -475,10 +489,12 @@ export default function Mini() {
               setShowCheckMenu((p) => !p);
               setShowRevealMenu(false);
             }}
-            className="bg-blue-500 text-white px-4 py-2 rounded-full shadow hover:brightness-105"
+            className="bg-blue-500 text-white text-sm rounded-full shadow hover:brightness-105"
+            style={{ height: "28px", width: "70px" }}
           >
-            ✅ Check
+            Check
           </button>
+
           {showCheckMenu && (
             <div className="absolute z-10 bg-white border rounded shadow mt-2 w-36">
               <button
@@ -519,10 +535,12 @@ export default function Mini() {
               setShowRevealMenu((p) => !p);
               setShowCheckMenu(false);
             }}
-            className="bg-yellow-500 text-white px-4 py-2 rounded-full shadow hover:brightness-105"
+            className="bg-yellow-500 text-white text-sm rounded-full shadow hover:brightness-105"
+            style={{ height: "28px", width: "70px" }}
           >
-            💡 Reveal
+            Reveal
           </button>
+
           {showRevealMenu && (
             <div className="absolute z-10 bg-white border rounded shadow mt-2 w-36">
               <button
@@ -693,7 +711,9 @@ export default function Mini() {
             <h2 className="text-2xl font-bold">🎉 Congratulations!</h2>
             <p>
               You solved the Mini in{" "}
-              <span className="font-semibold">{elapsed}s</span>
+              <span className="font-semibold">
+                {Math.floor(elapsed / 60)}m {elapsed % 60}s
+              </span>
             </p>
 
             {/* copy-to-clipboard */}
