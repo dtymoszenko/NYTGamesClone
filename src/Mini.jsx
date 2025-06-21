@@ -25,7 +25,7 @@ const CELL = 72; // pixel size of each square
 const kbRows = [
   ["Q", "W", "E", "R", "T", "Y", "U", "I", "O", "P"],
   ["A", "S", "D", "F", "G", "H", "J", "K", "L"],
-  ["Z", "X", "C", "V", "B", "N", "M", "Backspace", "Enter"],
+  ["Z", "X", "C", "V", "B", "N", "M", "Backspace"], // Removed Enter key
 ];
 
 /* ---------- BOARD DATA ---------- */
@@ -678,7 +678,7 @@ export default function Mini() {
                 key={k}
                 onClick={() => handleKey(k)}
                 className={`flex-1 bg-white sm:flex-none sm:w-10 md:w-12 lg:w-14 h-12 rounded-lg shadow text-sm font-medium border border-gray-300 hover:brightness-105 transition ${
-                  k === "Enter" || k === "Backspace" ? "sm:w-20 md:w-24" : ""
+                  k === "Backspace" ? "sm:w-20 md:w-24" : ""
                 }`}
               >
                 {k === "Backspace" ? "⌫" : k}
