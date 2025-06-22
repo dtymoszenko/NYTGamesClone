@@ -14,7 +14,7 @@ export default function Wordle() {
   const numCols = 5; // Each guess is a 5-letter word
   const STORAGE_KEY = "wordleState"; // NEW – all in one place (storage)
 
-  const targetWord = "ELLIE"; // This is the word user is guessing, currently HARDCODED obviously
+  const targetWord = "BEACH"; // This is the word user is guessing, currently HARDCODED obviously
 
   // Board is a 2D array: 6 rows of 5 blank tiles
   const [board, setBoard] = useState(
